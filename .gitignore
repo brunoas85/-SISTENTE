@@ -1,0 +1,6 @@
+# Claude Code: config local de cada máquina
+.claude/settings.local.json
+
+# Supabase CLI: estado local
+supabase/.temp/
+supabase/.branches/
