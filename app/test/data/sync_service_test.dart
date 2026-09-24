@@ -438,4 +438,35 @@ void main() {
     await Future.wait([sync.sync(fakeUserId), sync.sync(fakeUserId)]);
     expect(remote.calls.where((c) => c.startsWith('upload:')), hasLength(1));
   });
+
+  group('carga a mano desde la vista mensual', () {
+    test('sube el tramo corregido con su hora original y el borrado', () async {
+      final f = await repo.agregarTramo(
+        userId: fakeUserId,
+        date: CalendarDate(2026, 9, 21),
+        ingresoMin: 480,
+        egresoMin: 960,
+      );
+      await sync.sync(fakeUserId);
+      expect(remote.rows[f.id]!.editado, isFalse);
+
+      await repo.editarTramo(
+        userId: fakeUserId,
+        id: f.id,
+        ingresoMin: 490,
+        egresoMin: 960,
+      );
+      await sync.sync(fakeUserId);
+      final editado = remote.rows[f.id]!;
+      expect(editado.ingresoMin, 490);
+      expect(editado.ingresoOriginalMin, 480);
+      expect(editado.editado, isTrue);
+
+      await repo.borrarTramo(userId: fakeUserId, id: f.id);
+      final r = await sync.sync(fakeUserId);
+      expect(r.failed, 0);
+      expect(remote.rows[f.id]!.deletedAt, isNotNull);
+      expect((await repo.findById(f.id))!.syncStatus, SyncStatus.synced);
+    });
+  });
 }

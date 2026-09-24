@@ -4,10 +4,18 @@ import '../../../data/local/app_database.dart';
 
 /// Ícono discreto con el estado de sincronización de una fichada.
 class SyncStatusIcon extends StatelessWidget {
-  const SyncStatusIcon({super.key, required this.status, this.error});
+  const SyncStatusIcon({
+    super.key,
+    required this.status,
+    this.error,
+    this.dimension = 48,
+  });
 
   final SyncStatus status;
   final String? error;
+
+  /// Lado del área del ícono: 48 dp (táctil) o menos en tablas densas de PC.
+  final double dimension;
 
   static String labelFor(SyncStatus status) => switch (status) {
     SyncStatus.pending => 'Pendiente de sincronizar',
@@ -35,10 +43,9 @@ class SyncStatusIcon extends StatelessWidget {
       child: Semantics(
         label: label,
         excludeSemantics: true,
-        child: SizedBox(
-          width: 48,
-          height: 48,
-          child: Icon(icon, color: color, size: 22),
+        child: SizedBox.square(
+          dimension: dimension,
+          child: Icon(icon, color: color, size: dimension < 40 ? 18 : 22),
         ),
       ),
     );

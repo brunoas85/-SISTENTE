@@ -112,6 +112,19 @@ class FakeFichadasRemote implements FichadasRemote {
     storage[path] = bytes;
   }
 
+  /// Duraciones pedidas para las URLs firmadas, en orden.
+  final signedUrlRequests = <(String, Duration)>[];
+
+  @override
+  Future<String> signedPhotoUrl(
+    String path, {
+    Duration expiresIn = const Duration(seconds: 60),
+  }) async {
+    _checkOnline();
+    signedUrlRequests.add((path, expiresIn));
+    return 'https://storage.example.invalid/firmada/$path?token=ficticio';
+  }
+
   @override
   Future<void> upsertFichada(RemoteFichada fichada) async {
     _checkOnline();

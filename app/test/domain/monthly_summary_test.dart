@@ -133,5 +133,86 @@ void main() {
       expect(s.openDays.single.date.day, 3);
       expect(s.daysNeedingReview.map((d) => d.date.day), [6]);
     });
+    group('bankUntil', () {
+      // Septiembre 2026, hoy jueves 24. Datos ficticios.
+      final hoy = CalendarDate(2026, 9, 24);
+      final calc = DayCalculator(
+        today: hoy,
+        controlStart: CalendarDate(2026, 9, 1),
+      );
+      final records = [
+        for (
+          var d = CalendarDate(2026, 9, 1);
+          !d.isAfter(hoy);
+          d = d.addDays(1)
+        )
+          if (!d.isWeekend) rec(d, hm(8, 0), hm(16, 30)),
+      ];
+      final futuro = BankMovement.usufruct(
+        date: CalendarDate(2026, 9, 28),
+        scope: UsufructScope.full,
+        minutes: 480,
+      );
+
+      test('corta la variación del banco en hoy y deja todos los días', () {
+        final s = buildMonthlySummary(
+          year: 2026,
+          month: 9,
+          calculator: calc,
+          records: records,
+          movements: [futuro],
+          bankUntil: hoy,
+        );
+        expect(s.days.length, 30);
+        // 18 días hábiles del 1 al 24, cada uno +0:30.
+        expect(s.creditMinutes, 18 * 30);
+        expect(s.activeUsufructMinutes, 0);
+        expect(s.bankDeltaMinutes, 18 * 30);
+        // El día del usufructo futuro se ve igual con su estado.
+        final d28 = s.days.firstWhere((d) => d.date == futuro.date);
+        expect(d28.status, DayStatus.usufruct);
+      });
+
+      test('sin bankUntil, el usufructo futuro resta en el mes', () {
+        final s = buildMonthlySummary(
+          year: 2026,
+          month: 9,
+          calculator: calc,
+          records: records,
+          movements: [futuro],
+        );
+        expect(s.bankDeltaMinutes, 18 * 30 - 480);
+      });
+
+      test('un mes posterior a bankUntil no mueve el banco', () {
+        final s = buildMonthlySummary(
+          year: 2026,
+          month: 10,
+          calculator: calc,
+          movements: [
+            BankMovement.usufruct(
+              date: CalendarDate(2026, 10, 5),
+              scope: UsufructScope.full,
+              minutes: 480,
+            ),
+          ],
+          bankUntil: hoy,
+        );
+        expect(s.bankDeltaMinutes, 0);
+        expect(s.days.length, 31);
+        expect(s.missingDays, isEmpty);
+      });
+
+      test('un mes anterior a bankUntil se calcula completo', () {
+        final s = buildMonthlySummary(
+          year: 2026,
+          month: 8,
+          calculator: DayCalculator(today: hoy),
+          bankUntil: hoy,
+        );
+        expect(s.missingDays.length, 21);
+        expect(s.bankDeltaMinutes, -21 * 480);
+      });
+    });
   });
 }

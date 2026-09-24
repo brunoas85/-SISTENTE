@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../features/asistencia/asistencia_mes_page.dart';
 import '../../features/asistencia/fichar_page.dart';
 import '../../features/banco_horas/banco_page.dart';
 import '../../features/auth/login_page.dart';
@@ -15,18 +16,26 @@ part 'app_router.g.dart';
 abstract final class Routes {
   static const login = '/login';
   static const fichar = '/fichar';
+  static const asistencia = '/asistencia';
   static const banco = '/banco';
   static const feriados = '/feriados';
   static const perfil = '/perfil';
 }
 
-/// Secciones de la navegación principal.
+/// Secciones de la navegación principal. Asistencia va segunda: en el
+/// celular lo primero es fichar y en la PC queda arriba del rail.
 const shellDestinations = [
   ShellDestination(
     path: Routes.fichar,
     label: 'Fichar',
     icon: Icons.fingerprint,
     selectedIcon: Icons.fingerprint,
+  ),
+  ShellDestination(
+    path: Routes.asistencia,
+    label: 'Asistencia',
+    icon: Icons.calendar_month_outlined,
+    selectedIcon: Icons.calendar_month,
   ),
   ShellDestination(
     path: Routes.banco,
@@ -81,6 +90,11 @@ GoRouter appRouter(Ref ref) {
             path: Routes.fichar,
             pageBuilder: (context, state) =>
                 const NoTransitionPage(child: FicharPage()),
+          ),
+          GoRoute(
+            path: Routes.asistencia,
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: AsistenciaMesPage()),
           ),
           GoRoute(
             path: Routes.banco,

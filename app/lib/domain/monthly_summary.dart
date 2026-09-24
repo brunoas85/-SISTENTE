@@ -59,20 +59,29 @@ class MonthlySummary {
 
 /// Arma el resumen de [year]/[month]. Los registros y movimientos de otros
 /// meses se ignoran.
+///
+/// [bankUntil], si se indica, corta la variación del banco
+/// ([MonthlySummary.bank]) en esa fecha inclusive: en el mes en curso, los
+/// usufructos ya cargados a futuro todavía no restan (igual que el saldo
+/// actual del banco). Los [MonthlySummary.days] siguen siendo todos los días
+/// del mes.
 MonthlySummary buildMonthlySummary({
   required int year,
   required int month,
   required DayCalculator calculator,
   Iterable<DailyRecord> records = const [],
   Iterable<BankMovement> movements = const [],
+  CalendarDate? bankUntil,
 }) {
   final first = CalendarDate(year, month, 1);
   final last = CalendarDate(year, month, CalendarDate.daysInMonth(year, month));
 
-  final monthRecords =
-      records.where((r) => r.date.year == year && r.date.month == month);
-  final monthMovements =
-      movements.where((m) => m.date.year == year && m.date.month == month);
+  final monthRecords = records.where(
+    (r) => r.date.year == year && r.date.month == month,
+  );
+  final monthMovements = movements.where(
+    (m) => m.date.year == year && m.date.month == month,
+  );
 
   final recordsByDate = <CalendarDate, List<DailyRecord>>{};
   for (final r in monthRecords) {
@@ -94,16 +103,23 @@ MonthlySummary buildMonthlySummary({
     );
   }
 
+  final bankTo = bankUntil != null && bankUntil.isBefore(last)
+      ? bankUntil
+      : last;
+  // Con [bankTo] anterior al 1 (un mes futuro) el rango queda vacío: el mes
+  // todavía no mueve el banco.
+  final bank = calculateBankBalance(
+    calculator: calculator,
+    records: monthRecords,
+    movements: monthMovements,
+    from: first,
+    to: bankTo,
+  );
+
   return MonthlySummary(
     year: year,
     month: month,
     days: List.unmodifiable(days),
-    bank: calculateBankBalance(
-      calculator: calculator,
-      records: monthRecords,
-      movements: monthMovements,
-      from: first,
-      to: last,
-    ),
+    bank: bank,
   );
 }

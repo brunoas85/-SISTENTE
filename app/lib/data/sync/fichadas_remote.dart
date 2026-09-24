@@ -36,6 +36,13 @@ abstract interface class FichadasRemote {
   /// Sube (o reemplaza) una foto en el bucket `comprobantes`.
   Future<void> uploadPhoto({required String path, required Uint8List bytes});
 
+  /// URL firmada de corta duración ([expiresIn], 60 s por defecto) para ver
+  /// una foto del bucket privado `comprobantes`. Nunca una URL pública.
+  Future<String> signedPhotoUrl(
+    String path, {
+    Duration expiresIn = const Duration(seconds: 60),
+  });
+
   /// Inserta o reemplaza la fila completa (gana el último que sincroniza).
   Future<void> upsertFichada(RemoteFichada fichada);
 
@@ -74,6 +81,15 @@ class SupabaseFichadasRemote implements FichadasRemote {
               ),
             ),
       );
+
+  @override
+  Future<String> signedPhotoUrl(
+    String path, {
+    Duration expiresIn = const Duration(seconds: 60),
+  }) => _guard(
+    () =>
+        _client.storage.from(bucket).createSignedUrl(path, expiresIn.inSeconds),
+  );
 
   @override
   Future<void> upsertFichada(RemoteFichada fichada) => _guard(

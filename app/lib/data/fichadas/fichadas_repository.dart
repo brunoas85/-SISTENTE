@@ -288,6 +288,162 @@ class FichadasRepository {
     return (await findById(row.id))!;
   }
 
+  // ---------------------------------------------------------------------------
+  // Carga a mano (vista mensual, PC)
+  // ---------------------------------------------------------------------------
+
+  CalendarDate get _hoy => CalendarDate.fromDateTime(_clock());
+
+  Future<LocalFichada> _activa(String userId, String id) async {
+    final row = await findById(id);
+    if (row == null || row.userId != userId || row.isDeleted) {
+      throw const FichadaInvalidaException('No se encontró el tramo.');
+    }
+    return row;
+  }
+
+  /// Agrega un tramo completo en un día pasado, con las horas a mano.
+  ///
+  /// Sin hora del dispositivo no hay hora original: queda `editado = false`
+  /// (el CHECK `fichadas_editado_coherente` exige una hora original para
+  /// marcarlo). Un tramo agregado desde cero se reconoce porque no tiene
+  /// foto; distinguirlo de verdad necesita una columna en el backend.
+  ///
+  /// Reglas: ver [validarTramoManual] (solo días pasados y laborables, con
+  /// egreso posterior al ingreso y sin superposición).
+  Future<LocalFichada> agregarTramo({
+    required String userId,
+    required CalendarDate date,
+    required int ingresoMin,
+    required int egresoMin,
+  }) async {
+    final motivo = validarTramoManual(
+      accion: EdicionTramo.alta,
+      fecha: date,
+      hoy: _hoy,
+      ingresoMin: ingresoMin,
+      egresoMin: egresoMin,
+      otrosDelDia: await _dayRecords(userId, toIsoDate(date)),
+      feriados: await _holidaysOn(date),
+    );
+    if (motivo != null) throw FichadaInvalidaException(motivo);
+
+    final id = _newId();
+    await _db
+        .into(_t)
+        .insert(
+          FichadasCompanion.insert(
+            id: id,
+            userId: userId,
+            fecha: toIsoDate(date),
+            ingresoMin: ingresoMin,
+            egresoMin: Value(egresoMin),
+            updatedAt: _clock(),
+            revision: const Value(1),
+            syncStatus: SyncStatus.pending,
+          ),
+        );
+    return (await findById(id))!;
+  }
+
+  /// Cambia las horas del tramo [id] a mano: corrige el ingreso o el egreso,
+  /// o carga el egreso de un tramo abierto.
+  ///
+  /// Igual que al fichar, cada hora corregida guarda en `*_original_min` la
+  /// que tenía antes de la primera corrección (la del dispositivo, si la
+  /// había) y queda `editado = true`. Si una hora vuelve a su valor
+  /// original, se borra la original. Cargar el egreso de un tramo abierto no
+  /// tiene hora original (igual que cerrar un tramo anterior desde Fichar).
+  ///
+  /// No se puede quitar el egreso. Reglas: ver [validarTramoManual].
+  Future<LocalFichada> editarTramo({
+    required String userId,
+    required String id,
+    required int ingresoMin,
+    int? egresoMin,
+  }) async {
+    final row = await _activa(userId, id);
+    if (row.egresoMin != null && egresoMin == null) {
+      throw const FichadaInvalidaException(
+        'No se puede quitar el egreso. Si el tramo está mal, borralo.',
+      );
+    }
+    if (row.ingresoMin == ingresoMin && row.egresoMin == egresoMin) return row;
+
+    final cambiaHoras =
+        row.ingresoMin != ingresoMin ||
+        (row.egresoMin != null && row.egresoMin != egresoMin);
+    final motivo = validarTramoManual(
+      accion: cambiaHoras ? EdicionTramo.edicion : EdicionTramo.cierre,
+      fecha: row.date,
+      hoy: _hoy,
+      id: row.id,
+      ingresoMin: ingresoMin,
+      egresoMin: egresoMin,
+      otrosDelDia: await _dayRecords(userId, row.fecha),
+      feriados: await _holidaysOn(row.date),
+    );
+    if (motivo != null) throw FichadaInvalidaException(motivo);
+
+    final ingresoOriginal = _original(
+      anterior: row.ingresoMin,
+      original: row.ingresoOriginalMin,
+      nueva: ingresoMin,
+    );
+    final egresoAnterior = row.egresoMin;
+    final egresoOriginal = egresoAnterior == null
+        ? null // se está cerrando: no hay hora anterior
+        : _original(
+            anterior: egresoAnterior,
+            original: row.egresoOriginalMin,
+            nueva: egresoMin!,
+          );
+
+    await (_db.update(_t)..where((f) => f.id.equals(row.id))).write(
+      FichadasCompanion(
+        ingresoMin: Value(ingresoMin),
+        egresoMin: Value(egresoMin),
+        ingresoOriginalMin: Value(ingresoOriginal),
+        egresoOriginalMin: Value(egresoOriginal),
+        // Coherente con el CHECK fichadas_editado_coherente.
+        editado: Value(ingresoOriginal != null || egresoOriginal != null),
+        updatedAt: Value(_clock()),
+        revision: Value(row.revision + 1),
+        syncStatus: const Value(SyncStatus.pending),
+        syncError: const Value(null),
+      ),
+    );
+    return (await findById(row.id))!;
+  }
+
+  /// Hora original después de corregir [anterior] a [nueva]: se conserva la
+  /// primera ([original] o, si no había, [anterior]) y se borra si la hora
+  /// vuelve a ser esa.
+  static int? _original({
+    required int anterior,
+    required int? original,
+    required int nueva,
+  }) {
+    if (nueva == anterior) return original;
+    final primera = original ?? anterior;
+    return primera == nueva ? null : primera;
+  }
+
+  /// Borrado lógico del tramo [id]: marca `deleted_at` y lo sube en el sync.
+  /// Las fotos quedan (en el dispositivo y en el bucket).
+  Future<void> borrarTramo({required String userId, required String id}) async {
+    final row = await _activa(userId, id);
+    await (_db.update(_t)..where((f) => f.id.equals(row.id))).write(
+      FichadasCompanion(
+        deletedAt: Value(_clock()),
+        updatedAt: Value(_clock()),
+        revision: Value(row.revision + 1),
+        syncStatus: const Value(SyncStatus.pending),
+        syncError: const Value(null),
+      ),
+    );
+  }
+
   static void _checkMinutes(int m) {
     if (m < 0 || m > 1439) {
       throw const FichadaInvalidaException('La hora no es válida.');
