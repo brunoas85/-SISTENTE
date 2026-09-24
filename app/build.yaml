@@ -1,0 +1,16 @@
+# drift genera `*.drift.dart` en una fase propia, antes que riverpod_generator,
+# para que los providers puedan usar las clases de la base (LocalFichada…).
+targets:
+  $default:
+    builders:
+      drift_dev:
+        enabled: false
+      drift_dev:analyzer:
+        enabled: true
+      drift_dev:not_shared:
+        enabled: true
+
+global_options:
+  drift_dev:not_shared:
+    runs_before:
+      - riverpod_generator

@@ -1,0 +1,142 @@
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+import '../../core/auth/auth_providers.dart';
+import '../../data/fichadas/fichadas_repository.dart';
+import '../../data/local/app_database.dart';
+import '../../data/providers.dart';
+import '../../domain/domain.dart';
+
+part 'asistencia_providers.g.dart';
+
+/// Fecha de hoy según el dispositivo. Se invalida al volver a primer plano.
+@riverpod
+CalendarDate today(Ref ref) =>
+    CalendarDate.fromDateTime(ref.watch(clockProvider)());
+
+/// Todas las fichadas activas del usuario (desde la base local).
+@riverpod
+Stream<List<LocalFichada>> misFichadas(Ref ref) {
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) return Stream.value(const []);
+  return ref.watch(fichadasRepositoryProvider).watchAll(userId);
+}
+
+/// Feriados guardados en el dispositivo.
+@riverpod
+Stream<List<Holiday>> feriadosLocales(Ref ref) =>
+    ref.watch(fichadasRepositoryProvider).watchHolidays();
+
+/// Fichadas sin sincronizar (pendientes o con error).
+@riverpod
+Stream<int> pendientesCount(Ref ref) {
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) return Stream.value(0);
+  return ref.watch(fichadasRepositoryProvider).watchUnsyncedCount(userId);
+}
+
+/// Lo que muestra la pantalla Fichar. Todos los cálculos salen de `domain/`.
+class ResumenFichar {
+  const ResumenFichar({
+    required this.hoy,
+    required this.tramos,
+    required this.dia,
+    required this.saldoMesMinutes,
+    required this.saldoTotalMinutes,
+    required this.abiertasAnteriores,
+  });
+
+  final CalendarDate hoy;
+
+  /// Tramos de hoy, por hora de ingreso.
+  final List<LocalFichada> tramos;
+
+  /// Cálculo del día de hoy.
+  final DayResult dia;
+
+  /// Variación del banco en el mes de hoy (solo fichadas).
+  final int saldoMesMinutes;
+
+  /// Saldo del banco desde el inicio del control hasta hoy (solo fichadas).
+  final int saldoTotalMinutes;
+
+  /// Tramos de días anteriores que quedaron sin egreso.
+  final List<LocalFichada> abiertasAnteriores;
+
+  /// Tramo abierto de hoy, si hay.
+  LocalFichada? get abierto {
+    for (final t in tramos) {
+      if (t.isOpen) return t;
+    }
+    return null;
+  }
+
+  /// El próximo paso: egreso si hay un tramo abierto, si no ingreso.
+  TipoFichada get proximaFichada =>
+      abierto == null ? TipoFichada.ingreso : TipoFichada.egreso;
+}
+
+/// Arma el [ResumenFichar] con el calculador de `domain/`.
+///
+/// Todavía no incluye los movimientos manuales del banco (acumulaciones y
+/// usufructos) ni las jornadas por vigencia: se usa la jornada por defecto.
+ResumenFichar buildResumenFichar({
+  required CalendarDate hoy,
+  required List<LocalFichada> fichadas,
+  required List<Holiday> feriados,
+}) {
+  final records = [for (final f in fichadas) f.toDailyRecord()];
+  final calculator = DayCalculator(
+    holidays: feriados,
+    today: hoy,
+    controlStart: controlStartFrom(records),
+  );
+  final mes = buildMonthlySummary(
+    year: hoy.year,
+    month: hoy.month,
+    calculator: calculator,
+    records: records,
+  );
+  final total = calculateBankBalance(
+    calculator: calculator,
+    records: records,
+    to: hoy,
+  );
+  return ResumenFichar(
+    hoy: hoy,
+    tramos: [
+      for (final f in fichadas)
+        if (f.date == hoy) f,
+    ]..sort((a, b) => a.ingresoMin.compareTo(b.ingresoMin)),
+    dia: calculator.calculate(hoy, records: records),
+    saldoMesMinutes: mes.bankDeltaMinutes,
+    saldoTotalMinutes: total.balanceMinutes,
+    abiertasAnteriores: [
+      for (final f in fichadas)
+        if (f.isOpen && f.date.isBefore(hoy)) f,
+    ],
+  );
+}
+
+@riverpod
+AsyncValue<ResumenFichar> resumenFichar(Ref ref) {
+  final fichadas = ref.watch(misFichadasProvider);
+  final feriados = ref.watch(feriadosLocalesProvider);
+  final hoy = ref.watch(todayProvider);
+
+  if (fichadas.hasError) {
+    return AsyncError(
+      fichadas.error!,
+      fichadas.stackTrace ?? StackTrace.current,
+    );
+  }
+  if (feriados.hasError) {
+    return AsyncError(
+      feriados.error!,
+      feriados.stackTrace ?? StackTrace.current,
+    );
+  }
+  final f = fichadas.value;
+  final h = feriados.value;
+  if (f == null || h == null) return const AsyncLoading();
+  return AsyncData(buildResumenFichar(hoy: hoy, fichadas: f, feriados: h));
+}

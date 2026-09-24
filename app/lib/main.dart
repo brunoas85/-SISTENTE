@@ -1,54 +1,70 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-const _supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-const _supabaseKey = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');
+import 'core/config.dart';
+import 'core/format/formatters.dart';
+import 'core/router/app_router.dart';
+import 'core/theme/app_theme.dart';
+import 'data/sync/sync_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (_supabaseUrl.isEmpty || _supabaseKey.isEmpty) {
-    throw StateError(
-      'Falta la config de Supabase. Corré con --dart-define-from-file=env/dev.json',
-    );
+  await initializeDateFormatting(appLocale);
+  if (!AppConfig.isConfigured) {
+    runApp(const _FaltaConfigApp());
+    return;
   }
-  await Supabase.initialize(url: _supabaseUrl, publishableKey: _supabaseKey);
-  runApp(const AsistenteApp());
+  // Supabase guarda la sesión en el dispositivo y la recupera sin red.
+  await Supabase.initialize(
+    url: AppConfig.supabaseUrl,
+    publishableKey: AppConfig.supabasePublishableKey,
+  );
+  runApp(const ProviderScope(child: AsistenteApp()));
 }
 
-class AsistenteApp extends StatelessWidget {
+const _supportedLocales = [Locale('es', 'AR'), Locale('es')];
+
+class AsistenteApp extends ConsumerWidget {
   const AsistenteApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Mantiene viva la sincronización automática mientras la app corre.
+    ref.listen(syncControllerProvider, (_, _) {});
+    return MaterialApp.router(
       title: '@sistente',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorSchemeSeed: const Color(0xFF2E6B4F),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorSchemeSeed: const Color(0xFF2E6B4F),
-        brightness: Brightness.dark,
-        useMaterial3: true,
-      ),
-      home: const InicioPage(),
+      theme: appLightTheme,
+      darkTheme: appDarkTheme,
+      locale: const Locale('es', 'AR'),
+      supportedLocales: _supportedLocales,
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      routerConfig: ref.watch(appRouterProvider),
     );
   }
 }
 
-class InicioPage extends StatelessWidget {
-  const InicioPage({super.key});
+class _FaltaConfigApp extends StatelessWidget {
+  const _FaltaConfigApp();
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
+  Widget build(BuildContext context) => MaterialApp(
+    title: '@sistente',
+    theme: appLightTheme,
+    home: const Scaffold(
       body: Center(
-        child: Text(
-          '@sistente',
-          style: Theme.of(context).textTheme.displaySmall,
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text(
+            'Falta la configuración de Supabase. Corré la app con '
+            '--dart-define-from-file=env/dev.json',
+            textAlign: TextAlign.center,
+          ),
         ),
       ),
-    );
-  }
+    ),
+  );
 }

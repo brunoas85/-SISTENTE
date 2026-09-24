@@ -24,6 +24,10 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>NSCameraUsageDescription</key>
+	<string>@sistente usa la cámara para sacar la foto del reloj biométrico como comprobante de la fichada.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>@sistente necesita acceder a tus fotos para adjuntar la foto del reloj biométrico como comprobante.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
