@@ -144,17 +144,20 @@ final class FeriadosLocalesProvider
 
 String _$feriadosLocalesHash() => r'b37c1c482183a885f5b80dbca2e4a0738aba690e';
 
-/// Fichadas sin sincronizar (pendientes o con error).
+/// Cambios sin sincronizar (pendientes o con error): fichadas, movimientos
+/// del banco y tipos de documento. Es el contador global de la UI.
 
 @ProviderFor(pendientesCount)
 final pendientesCountProvider = PendientesCountProvider._();
 
-/// Fichadas sin sincronizar (pendientes o con error).
+/// Cambios sin sincronizar (pendientes o con error): fichadas, movimientos
+/// del banco y tipos de documento. Es el contador global de la UI.
 
 final class PendientesCountProvider
     extends $FunctionalProvider<AsyncValue<int>, int, Stream<int>>
     with $FutureModifier<int>, $StreamProvider<int> {
-  /// Fichadas sin sincronizar (pendientes o con error).
+  /// Cambios sin sincronizar (pendientes o con error): fichadas, movimientos
+  /// del banco y tipos de documento. Es el contador global de la UI.
   PendientesCountProvider._()
     : super(
         from: null,
@@ -180,7 +183,7 @@ final class PendientesCountProvider
   }
 }
 
-String _$pendientesCountHash() => r'a68fd6140d54de6046dd486f5c9c24e959a0d6c7';
+String _$pendientesCountHash() => r'b6a778cad0be80f5c930392975d21b1f190a14e6';
 
 @ProviderFor(resumenFichar)
 final resumenFicharProvider = ResumenFicharProvider._();
@@ -227,4 +230,4 @@ final class ResumenFicharProvider
   }
 }
 
-String _$resumenFicharHash() => r'9bd369e721ecfc6a50dac22b54290e0202dffcd9';
+String _$resumenFicharHash() => r'd7f36ec805c9dcd1b39ca33994262c403b120be3';

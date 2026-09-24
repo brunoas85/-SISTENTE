@@ -135,64 +135,65 @@ class SupabaseFichadasRemote implements FichadasRemote {
     }, onConflict: 'user_id'),
   );
 
-  /// Traduce los errores de Supabase a los dos casos que entiende el sync.
-  Future<T> _guard<T>(Future<T> Function() call) async {
-    try {
-      return await call();
-    } on PostgrestException catch (e) {
-      if (_schemaMissingCodes.contains(e.code)) {
-        throw RemoteSchemaMissingException(
-          'El servidor todavía no tiene los cambios de esquema (${e.message}).',
-        );
-      }
-      final status = int.tryParse(e.code ?? '');
-      if (status != null && status >= 500) {
-        throw RemoteUnavailableException(
-          'El servidor no responde (${e.code}).',
-        );
-      }
-      throw RemoteRejectedException(_postgrestMessage(e));
-    } on StorageException catch (e) {
-      final status = int.tryParse(e.statusCode ?? '');
-      if (status != null && status >= 400 && status < 500) {
-        throw RemoteRejectedException('No se pudo subir la foto: ${e.message}');
-      }
-      throw RemoteUnavailableException(
-        'No se pudo subir la foto: ${e.message}',
+  Future<T> _guard<T>(Future<T> Function() call) => guardSupabaseCall(call);
+}
+
+/// Traduce los errores de Supabase a los dos casos que entiende el sync.
+/// [archivo] nombra lo que se sube a Storage en los mensajes ("la foto",
+/// "el adjunto").
+Future<T> guardSupabaseCall<T>(
+  Future<T> Function() call, {
+  String archivo = 'la foto',
+}) async {
+  try {
+    return await call();
+  } on PostgrestException catch (e) {
+    if (_schemaMissingCodes.contains(e.code)) {
+      throw RemoteSchemaMissingException(
+        'El servidor todavía no tiene los cambios de esquema (${e.message}).',
       );
-    } on AuthRetryableFetchException catch (e) {
-      throw RemoteUnavailableException(e.message);
-    } on AuthException {
-      throw const RemoteRejectedException(
-        'La sesión venció. Cerrá sesión y volvé a entrar.',
-      );
-    } catch (e) {
-      // Sin red: SocketException, ClientException, timeouts, etc.
-      throw RemoteUnavailableException(e.toString());
     }
+    final status = int.tryParse(e.code ?? '');
+    if (status != null && status >= 500) {
+      throw RemoteUnavailableException('El servidor no responde (${e.code}).');
+    }
+    throw RemoteRejectedException(_postgrestMessage(e));
+  } on StorageException catch (e) {
+    final status = int.tryParse(e.statusCode ?? '');
+    if (status != null && status >= 400 && status < 500) {
+      throw RemoteRejectedException('No se pudo subir $archivo: ${e.message}');
+    }
+    throw RemoteUnavailableException('No se pudo subir $archivo: ${e.message}');
+  } on AuthRetryableFetchException catch (e) {
+    throw RemoteUnavailableException(e.message);
+  } on AuthException {
+    throw const RemoteRejectedException(
+      'La sesión venció. Cerrá sesión y volvé a entrar.',
+    );
+  } catch (e) {
+    // Sin red: SocketException, ClientException, timeouts, etc.
+    throw RemoteUnavailableException(e.toString());
   }
+}
 
-  /// Columna, tabla o tipo inexistente (Postgres y caché de PostgREST).
-  static const _schemaMissingCodes = {
-    '42703',
-    '42P01',
-    '42704',
-    'PGRST204',
-    'PGRST205',
-  };
+/// Columna, tabla o tipo inexistente (Postgres y caché de PostgREST).
+const _schemaMissingCodes = {'42703', '42P01', '42704', 'PGRST204', 'PGRST205'};
 
-  static String _postgrestMessage(PostgrestException e) {
-    switch (e.code) {
-      case '23514':
-        return 'El servidor rechazó el cambio por una regla de datos '
-            '(${e.message}).';
-      case '42501':
-        return 'Sin permiso para guardar este cambio.';
-      case 'PGRST301':
-      case 'PGRST303':
-        return 'La sesión venció. Cerrá sesión y volvé a entrar.';
-      default:
-        return 'El servidor rechazó el cambio: ${e.message}';
-    }
+String _postgrestMessage(PostgrestException e) {
+  switch (e.code) {
+    case '23514':
+      return 'El servidor rechazó el cambio por una regla de datos '
+          '(${e.message}).';
+    case '23505':
+      return 'Ya existe un registro con esos datos (${e.message}).';
+    case '23503':
+      return 'Falta un dato relacionado en el servidor (${e.message}).';
+    case '42501':
+      return 'Sin permiso para guardar este cambio.';
+    case 'PGRST301':
+    case 'PGRST303':
+      return 'La sesión venció. Cerrá sesión y volvé a entrar.';
+    default:
+      return 'El servidor rechazó el cambio: ${e.message}';
   }
 }

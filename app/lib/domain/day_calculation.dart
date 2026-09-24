@@ -334,8 +334,11 @@ class DayCalculator {
       return result(hasUsufruct ? DayStatus.usufruct : DayStatus.today);
     }
     final start = controlStart;
-    if (!hasUsufruct && start != null && date.isBefore(start)) {
-      return result(DayStatus.beforeControl);
+    if (start != null && date.isBefore(start)) {
+      // Antes del inicio del control no hay fichadas que comparar: no hay
+      // deuda. Un usufructo (total o parcial) cargado ese día descuenta lo
+      // que se cargó.
+      return result(hasUsufruct ? DayStatus.usufruct : DayStatus.beforeControl);
     }
     // Día hábil pasado sin fichada: si un usufructo vigente lo cubre, no hay
     // deuda. Si no, la jornada completa es deuda, menos lo que cubra un

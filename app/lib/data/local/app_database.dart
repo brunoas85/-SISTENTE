@@ -108,7 +108,78 @@ class LocalPhotos extends Table {
   Set<Column> get primaryKey => {key};
 }
 
-@DriftDatabase(tables: [Fichadas, Feriados, Profiles, SyncState, LocalPhotos])
+/// Espejo local de `public.tipos_documento_gde` (catálogo editable por
+/// usuario: FSOLI, FOESC, …). Sin códigos hardcodeados.
+@DataClassName('LocalTipoDocumento')
+class TiposDocumentoGde extends Table {
+  /// uuid generado en el cliente.
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get codigo => text()();
+  TextColumn get descripcion => text().nullable()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  DateTimeColumn get updatedAt => dateTime()();
+  IntColumn get revision => integer().withDefault(const Constant(0))();
+  TextColumn get syncStatus => textEnum<SyncStatus>()();
+  TextColumn get syncError => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Espejo local de `public.banco_horas_movimientos` (acumulaciones y
+/// usufructos cargados a mano). El a favor y la deuda diarios no se guardan:
+/// se derivan de las fichadas.
+@DataClassName('LocalMovimiento')
+class BancoMovimientos extends Table {
+  /// uuid generado en el cliente.
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+
+  /// `acumulacion` | `usufructo` (enum `movimiento_tipo`).
+  TextColumn get tipo => text()();
+
+  /// `total` | `parcial` solo en usufructos; `null` en acumulaciones
+  /// (CHECK `banco_alcance_solo_usufructo`).
+  TextColumn get alcance => text().nullable()();
+
+  /// `yyyy-MM-dd`.
+  TextColumn get fecha => text()();
+  IntColumn get minutos => integer()();
+
+  /// `vigente` | `perdido` (enum `movimiento_estado`).
+  TextColumn get estado => text().withDefault(const Constant('vigente'))();
+  TextColumn get tipoDocumentoId => text().nullable()();
+  TextColumn get numeroGde => text().nullable()();
+
+  /// Ruta en el bucket `comprobantes` (se completa al subir el adjunto).
+  TextColumn get adjuntoPath => text().nullable()();
+
+  /// Referencia al adjunto guardado en el dispositivo (ver `PhotoStore`).
+  /// El nombre termina en la extensión (`.jpg` o `.pdf`).
+  TextColumn get adjuntoLocal => text().nullable()();
+  TextColumn get observacion => text().nullable()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  DateTimeColumn get updatedAt => dateTime()();
+  IntColumn get revision => integer().withDefault(const Constant(0))();
+  TextColumn get syncStatus => textEnum<SyncStatus>()();
+  TextColumn get syncError => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@DriftDatabase(
+  tables: [
+    Fichadas,
+    Feriados,
+    Profiles,
+    SyncState,
+    LocalPhotos,
+    TiposDocumentoGde,
+    BancoMovimientos,
+  ],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
@@ -116,7 +187,7 @@ class AppDatabase extends _$AppDatabase {
   static const holidaysPulledAtKey = 'feriados_pulled_at';
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -128,6 +199,7 @@ class AppDatabase extends _$AppDatabase {
       await customStatement(
         'CREATE INDEX fichadas_sync_idx ON fichadas (user_id, sync_status)',
       );
+      await _createBancoIndexes();
     },
     onUpgrade: (m, from, to) async {
       if (from < 2) {
@@ -138,6 +210,22 @@ class AppDatabase extends _$AppDatabase {
           syncState,
         )..where((s) => s.key.equals(holidaysPulledAtKey))).go();
       }
+      if (from < 3) {
+        await m.createTable(tiposDocumentoGde);
+        await m.createTable(bancoMovimientos);
+        await _createBancoIndexes();
+      }
     },
   );
+
+  Future<void> _createBancoIndexes() async {
+    await customStatement(
+      'CREATE INDEX banco_movimientos_user_fecha_idx '
+      'ON banco_movimientos (user_id, fecha)',
+    );
+    await customStatement(
+      'CREATE INDEX banco_movimientos_sync_idx '
+      'ON banco_movimientos (user_id, sync_status)',
+    );
+  }
 }

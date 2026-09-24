@@ -136,6 +136,9 @@ void main() {
       await tester.tap(find.byKey(const Key('nav-/feriados')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('sin-feriados')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('nav-/banco')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('saldo-banco')), findsOneWidget);
 
       await disposeTestApp(tester, deps);
     });

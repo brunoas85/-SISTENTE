@@ -2,10 +2,13 @@
 import 'dart:async';
 
 import 'package:asistente/core/auth/auth_repository.dart';
+import 'package:asistente/data/attachments/attachment_picker.dart';
+import 'package:asistente/data/banco/remote_banco.dart';
 import 'package:asistente/data/fichadas/remote_fichada.dart';
 import 'package:asistente/data/local/app_database.dart';
 import 'package:asistente/data/photos/photo_capture.dart';
 import 'package:asistente/data/photos/photo_store.dart';
+import 'package:asistente/data/sync/banco_remote.dart';
 import 'package:asistente/data/sync/fichadas_remote.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -232,3 +235,110 @@ class FakePhotoCapture implements PhotoCapture {
     return result;
   }
 }
+
+/// Backend de mentira para el banco de horas (tipos de documento,
+/// movimientos y adjuntos).
+class FakeBancoRemote implements BancoRemote {
+  bool online = true;
+
+  /// Si no es `null`, el upsert de ese movimiento se rechaza con este
+  /// mensaje.
+  final rejectMovimiento = <String, String>{};
+
+  /// Registro de llamadas, en orden (`upload:<path>`, `tipo:<id>`,
+  /// `movimiento:<id>`).
+  final calls = <String>[];
+  final storage = <String, Uint8List>{};
+  final contentTypes = <String, String>{};
+  final tipos = <String, RemoteTipoDocumento>{};
+  final movimientos = <String, RemoteMovimiento>{};
+  DateTime serverNow = DateTime.utc(2026, 9, 24, 12);
+  DateTime? lastMovimientosSince;
+
+  void _checkOnline() {
+    if (!online) throw const RemoteUnavailableException('Sin conexión');
+  }
+
+  DateTime _tick() => serverNow = serverNow.add(const Duration(seconds: 1));
+
+  @override
+  Future<void> uploadAdjunto({
+    required String path,
+    required Uint8List bytes,
+    required String contentType,
+  }) async {
+    _checkOnline();
+    calls.add('upload:$path');
+    storage[path] = bytes;
+    contentTypes[path] = contentType;
+  }
+
+  @override
+  Future<void> upsertTipoDocumento(RemoteTipoDocumento tipo) async {
+    _checkOnline();
+    calls.add('tipo:${tipo.id}');
+    tipos[tipo.id] = tipo.withUpdatedAt(_tick());
+  }
+
+  @override
+  Future<void> upsertMovimiento(RemoteMovimiento movimiento) async {
+    _checkOnline();
+    calls.add('movimiento:${movimiento.id}');
+    final reject = rejectMovimiento[movimiento.id];
+    if (reject != null) throw RemoteRejectedException(reject);
+    // FK compuesta: el tipo de documento tiene que existir y ser del usuario.
+    final tipoId = movimiento.tipoDocumentoId;
+    if (tipoId != null && tipos[tipoId]?.userId != movimiento.userId) {
+      throw const RemoteRejectedException('FK banco_tipo_documento_fk');
+    }
+    // CHECK banco_alcance_solo_usufructo.
+    if ((movimiento.tipo == 'usufructo') != (movimiento.alcance != null)) {
+      throw const RemoteRejectedException('CHECK banco_alcance_solo_usufructo');
+    }
+    movimientos[movimiento.id] = movimiento.withUpdatedAt(_tick());
+  }
+
+  @override
+  Future<List<RemoteTipoDocumento>> fetchTiposChangedSince(
+    DateTime? since,
+  ) async {
+    _checkOnline();
+    return tipos.values
+        .where((r) => since == null || !r.updatedAt!.isBefore(since))
+        .toList()
+      ..sort((a, b) => a.updatedAt!.compareTo(b.updatedAt!));
+  }
+
+  @override
+  Future<List<RemoteMovimiento>> fetchMovimientosChangedSince(
+    DateTime? since,
+  ) async {
+    _checkOnline();
+    lastMovimientosSince = since;
+    return movimientos.values
+        .where((r) => since == null || !r.updatedAt!.isBefore(since))
+        .toList()
+      ..sort((a, b) => a.updatedAt!.compareTo(b.updatedAt!));
+  }
+
+  /// Simula un movimiento cargado desde otro dispositivo.
+  void putFromOtherDevice(RemoteMovimiento m) =>
+      movimientos[m.id] = m.withUpdatedAt(_tick());
+}
+
+class FakeAttachmentPicker implements AttachmentPicker {
+  FakeAttachmentPicker([this.result]);
+
+  /// Lo que devuelve [pickImageOrPdf] (`null` = cancelado).
+  PickedFile? result;
+  int calls = 0;
+
+  @override
+  Future<PickedFile?> pickImageOrPdf() async {
+    calls++;
+    return result;
+  }
+}
+
+/// Bytes que empiezan como un PDF (no es un documento real).
+Uint8List fakePdf() => Uint8List.fromList('%PDF-1.4 ficticio'.codeUnits);

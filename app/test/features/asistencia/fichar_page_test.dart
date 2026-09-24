@@ -427,4 +427,70 @@ void main() {
 
     await disposeTestApp(tester, deps);
   });
+
+  testWidgets('el saldo es el real: incluye acumulaciones y usufructos, no '
+      'los perdidos', (tester) async {
+    final deps = TestDeps(now: DateTime(2026, 9, 24, 18));
+    // Martes 22: 10 h (+2:00, inicio del control). Miércoles 23: 8 h.
+    await insertar(
+      deps,
+      id: 'f1',
+      fecha: '2026-09-22',
+      ingreso: 420,
+      egreso: 1020,
+    );
+    await insertar(
+      deps,
+      id: 'f2',
+      fecha: '2026-09-23',
+      ingreso: 480,
+      egreso: 960,
+    );
+    Future<void> movimiento(
+      String id,
+      String tipo,
+      String? alcance,
+      String fecha,
+      int minutos, {
+      String estado = 'vigente',
+    }) => deps.db
+        .into(deps.db.bancoMovimientos)
+        .insert(
+          BancoMovimientosCompanion.insert(
+            id: id,
+            userId: fakeUserId,
+            tipo: tipo,
+            alcance: Value(alcance),
+            fecha: fecha,
+            minutos: minutos,
+            estado: Value(estado),
+            updatedAt: DateTime(2026, 9, 23),
+            syncStatus: SyncStatus.synced,
+          ),
+        );
+    await movimiento('m1', 'acumulacion', null, '2026-09-19', 180); // +3:00
+    await movimiento('m2', 'usufructo', 'parcial', '2026-09-23', 60); // -1:00
+    await movimiento(
+      'm3',
+      'acumulacion',
+      null,
+      '2026-09-20',
+      600,
+      estado: 'perdido',
+    );
+    await pumpFichar(tester, deps: deps);
+
+    final saldo = tester.widget<Text>(find.byKey(const Key('saldo')));
+    expect(saldo.textSpan!.toPlainText(), 'Banco · mes 4:00 · total 4:00');
+    // Ya no hay aviso de saldo parcial.
+    expect(
+      find.ancestor(
+        of: find.byKey(const Key('saldo')),
+        matching: find.byType(Tooltip),
+      ),
+      findsNothing,
+    );
+
+    await disposeTestApp(tester, deps);
+  });
 }

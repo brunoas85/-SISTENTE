@@ -51,4 +51,49 @@ void main() {
       expect(await db.select(db.profiles).get(), hasLength(1));
     },
   );
+
+  test('v2 → v3: crea las tablas del banco sin tocar las fichadas', () async {
+    driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+    final db = AppDatabase(
+      NativeDatabase.memory(
+        setup: (raw) {
+          raw.execute(
+            'CREATE TABLE fichadas (id TEXT NOT NULL, user_id TEXT NOT NULL, '
+            'fecha TEXT NOT NULL, ingreso_min INTEGER NOT NULL, '
+            'egreso_min INTEGER NULL, ingreso_original_min INTEGER NULL, '
+            'egreso_original_min INTEGER NULL, editado INTEGER NOT NULL '
+            'DEFAULT 0, foto_ingreso_path TEXT NULL, foto_egreso_path TEXT '
+            'NULL, foto_ingreso_local TEXT NULL, foto_egreso_local TEXT NULL, '
+            'observacion TEXT NULL, deleted_at INTEGER NULL, updated_at '
+            'INTEGER NOT NULL, revision INTEGER NOT NULL DEFAULT 0, '
+            'sync_status TEXT NOT NULL, sync_error TEXT NULL, '
+            'PRIMARY KEY (id))',
+          );
+          raw.execute(
+            "INSERT INTO fichadas (id, user_id, fecha, ingreso_min, "
+            "updated_at, sync_status) VALUES ('ficticia', '$fakeUserId', "
+            "'2026-09-24', 480, 0, 'pending')",
+          );
+          raw.execute('PRAGMA user_version = 2');
+        },
+      ),
+    );
+    addTearDown(db.close);
+
+    expect(await db.select(db.fichadas).get(), hasLength(1));
+    expect(await db.select(db.bancoMovimientos).get(), isEmpty);
+    expect(await db.select(db.tiposDocumentoGde).get(), isEmpty);
+    await db
+        .into(db.tiposDocumentoGde)
+        .insert(
+          TiposDocumentoGdeCompanion.insert(
+            id: 'tipo-ficticio',
+            userId: fakeUserId,
+            codigo: 'FSOLI',
+            updatedAt: DateTime(2026, 9, 24),
+            syncStatus: SyncStatus.pending,
+          ),
+        );
+    expect(await db.select(db.tiposDocumentoGde).get(), hasLength(1));
+  });
 }

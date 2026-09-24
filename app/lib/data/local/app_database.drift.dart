@@ -2174,6 +2174,1561 @@ class LocalPhotosCompanion extends UpdateCompanion<LocalPhoto> {
   }
 }
 
+class $TiposDocumentoGdeTable extends TiposDocumentoGde
+    with TableInfo<$TiposDocumentoGdeTable, LocalTipoDocumento> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TiposDocumentoGdeTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _codigoMeta = const VerificationMeta('codigo');
+  @override
+  late final GeneratedColumn<String> codigo = GeneratedColumn<String>(
+    'codigo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descripcionMeta = const VerificationMeta(
+    'descripcion',
+  );
+  @override
+  late final GeneratedColumn<String> descripcion = GeneratedColumn<String>(
+    'descripcion',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _revisionMeta = const VerificationMeta(
+    'revision',
+  );
+  @override
+  late final GeneratedColumn<int> revision = GeneratedColumn<int>(
+    'revision',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<SyncStatus, String> syncStatus =
+      GeneratedColumn<String>(
+        'sync_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<SyncStatus>($TiposDocumentoGdeTable.$convertersyncStatus);
+  static const VerificationMeta _syncErrorMeta = const VerificationMeta(
+    'syncError',
+  );
+  @override
+  late final GeneratedColumn<String> syncError = GeneratedColumn<String>(
+    'sync_error',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    codigo,
+    descripcion,
+    deletedAt,
+    updatedAt,
+    revision,
+    syncStatus,
+    syncError,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'tipos_documento_gde';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LocalTipoDocumento> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('codigo')) {
+      context.handle(
+        _codigoMeta,
+        codigo.isAcceptableOrUnknown(data['codigo']!, _codigoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_codigoMeta);
+    }
+    if (data.containsKey('descripcion')) {
+      context.handle(
+        _descripcionMeta,
+        descripcion.isAcceptableOrUnknown(
+          data['descripcion']!,
+          _descripcionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('revision')) {
+      context.handle(
+        _revisionMeta,
+        revision.isAcceptableOrUnknown(data['revision']!, _revisionMeta),
+      );
+    }
+    if (data.containsKey('sync_error')) {
+      context.handle(
+        _syncErrorMeta,
+        syncError.isAcceptableOrUnknown(data['sync_error']!, _syncErrorMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalTipoDocumento map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalTipoDocumento(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      codigo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}codigo'],
+      )!,
+      descripcion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}descripcion'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      revision: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}revision'],
+      )!,
+      syncStatus: $TiposDocumentoGdeTable.$convertersyncStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}sync_status'],
+        )!,
+      ),
+      syncError: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_error'],
+      ),
+    );
+  }
+
+  @override
+  $TiposDocumentoGdeTable createAlias(String alias) {
+    return $TiposDocumentoGdeTable(attachedDatabase, alias);
+  }
+
+  static JsonTypeConverter2<SyncStatus, String, String> $convertersyncStatus =
+      const EnumNameConverter<SyncStatus>(SyncStatus.values);
+}
+
+class LocalTipoDocumento extends DataClass
+    implements Insertable<LocalTipoDocumento> {
+  /// uuid generado en el cliente.
+  final String id;
+  final String userId;
+  final String codigo;
+  final String? descripcion;
+  final DateTime? deletedAt;
+  final DateTime updatedAt;
+  final int revision;
+  final SyncStatus syncStatus;
+  final String? syncError;
+  const LocalTipoDocumento({
+    required this.id,
+    required this.userId,
+    required this.codigo,
+    this.descripcion,
+    this.deletedAt,
+    required this.updatedAt,
+    required this.revision,
+    required this.syncStatus,
+    this.syncError,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['codigo'] = Variable<String>(codigo);
+    if (!nullToAbsent || descripcion != null) {
+      map['descripcion'] = Variable<String>(descripcion);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['revision'] = Variable<int>(revision);
+    {
+      map['sync_status'] = Variable<String>(
+        $TiposDocumentoGdeTable.$convertersyncStatus.toSql(syncStatus),
+      );
+    }
+    if (!nullToAbsent || syncError != null) {
+      map['sync_error'] = Variable<String>(syncError);
+    }
+    return map;
+  }
+
+  TiposDocumentoGdeCompanion toCompanion(bool nullToAbsent) {
+    return TiposDocumentoGdeCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      codigo: Value(codigo),
+      descripcion: descripcion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(descripcion),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      updatedAt: Value(updatedAt),
+      revision: Value(revision),
+      syncStatus: Value(syncStatus),
+      syncError: syncError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncError),
+    );
+  }
+
+  factory LocalTipoDocumento.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalTipoDocumento(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      codigo: serializer.fromJson<String>(json['codigo']),
+      descripcion: serializer.fromJson<String?>(json['descripcion']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      revision: serializer.fromJson<int>(json['revision']),
+      syncStatus: $TiposDocumentoGdeTable.$convertersyncStatus.fromJson(
+        serializer.fromJson<String>(json['syncStatus']),
+      ),
+      syncError: serializer.fromJson<String?>(json['syncError']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'codigo': serializer.toJson<String>(codigo),
+      'descripcion': serializer.toJson<String?>(descripcion),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'revision': serializer.toJson<int>(revision),
+      'syncStatus': serializer.toJson<String>(
+        $TiposDocumentoGdeTable.$convertersyncStatus.toJson(syncStatus),
+      ),
+      'syncError': serializer.toJson<String?>(syncError),
+    };
+  }
+
+  LocalTipoDocumento copyWith({
+    String? id,
+    String? userId,
+    String? codigo,
+    Value<String?> descripcion = const Value.absent(),
+    Value<DateTime?> deletedAt = const Value.absent(),
+    DateTime? updatedAt,
+    int? revision,
+    SyncStatus? syncStatus,
+    Value<String?> syncError = const Value.absent(),
+  }) => LocalTipoDocumento(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    codigo: codigo ?? this.codigo,
+    descripcion: descripcion.present ? descripcion.value : this.descripcion,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    revision: revision ?? this.revision,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncError: syncError.present ? syncError.value : this.syncError,
+  );
+  LocalTipoDocumento copyWithCompanion(TiposDocumentoGdeCompanion data) {
+    return LocalTipoDocumento(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      codigo: data.codigo.present ? data.codigo.value : this.codigo,
+      descripcion: data.descripcion.present
+          ? data.descripcion.value
+          : this.descripcion,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      revision: data.revision.present ? data.revision.value : this.revision,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncError: data.syncError.present ? data.syncError.value : this.syncError,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalTipoDocumento(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('codigo: $codigo, ')
+          ..write('descripcion: $descripcion, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('revision: $revision, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncError: $syncError')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    codigo,
+    descripcion,
+    deletedAt,
+    updatedAt,
+    revision,
+    syncStatus,
+    syncError,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalTipoDocumento &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.codigo == this.codigo &&
+          other.descripcion == this.descripcion &&
+          other.deletedAt == this.deletedAt &&
+          other.updatedAt == this.updatedAt &&
+          other.revision == this.revision &&
+          other.syncStatus == this.syncStatus &&
+          other.syncError == this.syncError);
+}
+
+class TiposDocumentoGdeCompanion extends UpdateCompanion<LocalTipoDocumento> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> codigo;
+  final Value<String?> descripcion;
+  final Value<DateTime?> deletedAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> revision;
+  final Value<SyncStatus> syncStatus;
+  final Value<String?> syncError;
+  final Value<int> rowid;
+  const TiposDocumentoGdeCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.codigo = const Value.absent(),
+    this.descripcion = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.revision = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncError = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TiposDocumentoGdeCompanion.insert({
+    required String id,
+    required String userId,
+    required String codigo,
+    this.descripcion = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    required DateTime updatedAt,
+    this.revision = const Value.absent(),
+    required SyncStatus syncStatus,
+    this.syncError = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       codigo = Value(codigo),
+       updatedAt = Value(updatedAt),
+       syncStatus = Value(syncStatus);
+  static Insertable<LocalTipoDocumento> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? codigo,
+    Expression<String>? descripcion,
+    Expression<DateTime>? deletedAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? revision,
+    Expression<String>? syncStatus,
+    Expression<String>? syncError,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (codigo != null) 'codigo': codigo,
+      if (descripcion != null) 'descripcion': descripcion,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (revision != null) 'revision': revision,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncError != null) 'sync_error': syncError,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TiposDocumentoGdeCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? codigo,
+    Value<String?>? descripcion,
+    Value<DateTime?>? deletedAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? revision,
+    Value<SyncStatus>? syncStatus,
+    Value<String?>? syncError,
+    Value<int>? rowid,
+  }) {
+    return TiposDocumentoGdeCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      codigo: codigo ?? this.codigo,
+      descripcion: descripcion ?? this.descripcion,
+      deletedAt: deletedAt ?? this.deletedAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      revision: revision ?? this.revision,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncError: syncError ?? this.syncError,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (codigo.present) {
+      map['codigo'] = Variable<String>(codigo.value);
+    }
+    if (descripcion.present) {
+      map['descripcion'] = Variable<String>(descripcion.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (revision.present) {
+      map['revision'] = Variable<int>(revision.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(
+        $TiposDocumentoGdeTable.$convertersyncStatus.toSql(syncStatus.value),
+      );
+    }
+    if (syncError.present) {
+      map['sync_error'] = Variable<String>(syncError.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TiposDocumentoGdeCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('codigo: $codigo, ')
+          ..write('descripcion: $descripcion, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('revision: $revision, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncError: $syncError, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BancoMovimientosTable extends BancoMovimientos
+    with TableInfo<$BancoMovimientosTable, LocalMovimiento> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BancoMovimientosTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoMeta = const VerificationMeta('tipo');
+  @override
+  late final GeneratedColumn<String> tipo = GeneratedColumn<String>(
+    'tipo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _alcanceMeta = const VerificationMeta(
+    'alcance',
+  );
+  @override
+  late final GeneratedColumn<String> alcance = GeneratedColumn<String>(
+    'alcance',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fechaMeta = const VerificationMeta('fecha');
+  @override
+  late final GeneratedColumn<String> fecha = GeneratedColumn<String>(
+    'fecha',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _minutosMeta = const VerificationMeta(
+    'minutos',
+  );
+  @override
+  late final GeneratedColumn<int> minutos = GeneratedColumn<int>(
+    'minutos',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _estadoMeta = const VerificationMeta('estado');
+  @override
+  late final GeneratedColumn<String> estado = GeneratedColumn<String>(
+    'estado',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('vigente'),
+  );
+  static const VerificationMeta _tipoDocumentoIdMeta = const VerificationMeta(
+    'tipoDocumentoId',
+  );
+  @override
+  late final GeneratedColumn<String> tipoDocumentoId = GeneratedColumn<String>(
+    'tipo_documento_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _numeroGdeMeta = const VerificationMeta(
+    'numeroGde',
+  );
+  @override
+  late final GeneratedColumn<String> numeroGde = GeneratedColumn<String>(
+    'numero_gde',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _adjuntoPathMeta = const VerificationMeta(
+    'adjuntoPath',
+  );
+  @override
+  late final GeneratedColumn<String> adjuntoPath = GeneratedColumn<String>(
+    'adjunto_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _adjuntoLocalMeta = const VerificationMeta(
+    'adjuntoLocal',
+  );
+  @override
+  late final GeneratedColumn<String> adjuntoLocal = GeneratedColumn<String>(
+    'adjunto_local',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionMeta = const VerificationMeta(
+    'observacion',
+  );
+  @override
+  late final GeneratedColumn<String> observacion = GeneratedColumn<String>(
+    'observacion',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _revisionMeta = const VerificationMeta(
+    'revision',
+  );
+  @override
+  late final GeneratedColumn<int> revision = GeneratedColumn<int>(
+    'revision',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<SyncStatus, String> syncStatus =
+      GeneratedColumn<String>(
+        'sync_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<SyncStatus>($BancoMovimientosTable.$convertersyncStatus);
+  static const VerificationMeta _syncErrorMeta = const VerificationMeta(
+    'syncError',
+  );
+  @override
+  late final GeneratedColumn<String> syncError = GeneratedColumn<String>(
+    'sync_error',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    tipo,
+    alcance,
+    fecha,
+    minutos,
+    estado,
+    tipoDocumentoId,
+    numeroGde,
+    adjuntoPath,
+    adjuntoLocal,
+    observacion,
+    deletedAt,
+    updatedAt,
+    revision,
+    syncStatus,
+    syncError,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'banco_movimientos';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LocalMovimiento> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('tipo')) {
+      context.handle(
+        _tipoMeta,
+        tipo.isAcceptableOrUnknown(data['tipo']!, _tipoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoMeta);
+    }
+    if (data.containsKey('alcance')) {
+      context.handle(
+        _alcanceMeta,
+        alcance.isAcceptableOrUnknown(data['alcance']!, _alcanceMeta),
+      );
+    }
+    if (data.containsKey('fecha')) {
+      context.handle(
+        _fechaMeta,
+        fecha.isAcceptableOrUnknown(data['fecha']!, _fechaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaMeta);
+    }
+    if (data.containsKey('minutos')) {
+      context.handle(
+        _minutosMeta,
+        minutos.isAcceptableOrUnknown(data['minutos']!, _minutosMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_minutosMeta);
+    }
+    if (data.containsKey('estado')) {
+      context.handle(
+        _estadoMeta,
+        estado.isAcceptableOrUnknown(data['estado']!, _estadoMeta),
+      );
+    }
+    if (data.containsKey('tipo_documento_id')) {
+      context.handle(
+        _tipoDocumentoIdMeta,
+        tipoDocumentoId.isAcceptableOrUnknown(
+          data['tipo_documento_id']!,
+          _tipoDocumentoIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('numero_gde')) {
+      context.handle(
+        _numeroGdeMeta,
+        numeroGde.isAcceptableOrUnknown(data['numero_gde']!, _numeroGdeMeta),
+      );
+    }
+    if (data.containsKey('adjunto_path')) {
+      context.handle(
+        _adjuntoPathMeta,
+        adjuntoPath.isAcceptableOrUnknown(
+          data['adjunto_path']!,
+          _adjuntoPathMeta,
+        ),
+      );
+    }
+    if (data.containsKey('adjunto_local')) {
+      context.handle(
+        _adjuntoLocalMeta,
+        adjuntoLocal.isAcceptableOrUnknown(
+          data['adjunto_local']!,
+          _adjuntoLocalMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observacion')) {
+      context.handle(
+        _observacionMeta,
+        observacion.isAcceptableOrUnknown(
+          data['observacion']!,
+          _observacionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('revision')) {
+      context.handle(
+        _revisionMeta,
+        revision.isAcceptableOrUnknown(data['revision']!, _revisionMeta),
+      );
+    }
+    if (data.containsKey('sync_error')) {
+      context.handle(
+        _syncErrorMeta,
+        syncError.isAcceptableOrUnknown(data['sync_error']!, _syncErrorMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalMovimiento map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalMovimiento(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      tipo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tipo'],
+      )!,
+      alcance: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}alcance'],
+      ),
+      fecha: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fecha'],
+      )!,
+      minutos: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}minutos'],
+      )!,
+      estado: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}estado'],
+      )!,
+      tipoDocumentoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tipo_documento_id'],
+      ),
+      numeroGde: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}numero_gde'],
+      ),
+      adjuntoPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}adjunto_path'],
+      ),
+      adjuntoLocal: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}adjunto_local'],
+      ),
+      observacion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observacion'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      revision: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}revision'],
+      )!,
+      syncStatus: $BancoMovimientosTable.$convertersyncStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}sync_status'],
+        )!,
+      ),
+      syncError: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_error'],
+      ),
+    );
+  }
+
+  @override
+  $BancoMovimientosTable createAlias(String alias) {
+    return $BancoMovimientosTable(attachedDatabase, alias);
+  }
+
+  static JsonTypeConverter2<SyncStatus, String, String> $convertersyncStatus =
+      const EnumNameConverter<SyncStatus>(SyncStatus.values);
+}
+
+class LocalMovimiento extends DataClass implements Insertable<LocalMovimiento> {
+  /// uuid generado en el cliente.
+  final String id;
+  final String userId;
+
+  /// `acumulacion` | `usufructo` (enum `movimiento_tipo`).
+  final String tipo;
+
+  /// `total` | `parcial` solo en usufructos; `null` en acumulaciones
+  /// (CHECK `banco_alcance_solo_usufructo`).
+  final String? alcance;
+
+  /// `yyyy-MM-dd`.
+  final String fecha;
+  final int minutos;
+
+  /// `vigente` | `perdido` (enum `movimiento_estado`).
+  final String estado;
+  final String? tipoDocumentoId;
+  final String? numeroGde;
+
+  /// Ruta en el bucket `comprobantes` (se completa al subir el adjunto).
+  final String? adjuntoPath;
+
+  /// Referencia al adjunto guardado en el dispositivo (ver `PhotoStore`).
+  /// El nombre termina en la extensión (`.jpg` o `.pdf`).
+  final String? adjuntoLocal;
+  final String? observacion;
+  final DateTime? deletedAt;
+  final DateTime updatedAt;
+  final int revision;
+  final SyncStatus syncStatus;
+  final String? syncError;
+  const LocalMovimiento({
+    required this.id,
+    required this.userId,
+    required this.tipo,
+    this.alcance,
+    required this.fecha,
+    required this.minutos,
+    required this.estado,
+    this.tipoDocumentoId,
+    this.numeroGde,
+    this.adjuntoPath,
+    this.adjuntoLocal,
+    this.observacion,
+    this.deletedAt,
+    required this.updatedAt,
+    required this.revision,
+    required this.syncStatus,
+    this.syncError,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['tipo'] = Variable<String>(tipo);
+    if (!nullToAbsent || alcance != null) {
+      map['alcance'] = Variable<String>(alcance);
+    }
+    map['fecha'] = Variable<String>(fecha);
+    map['minutos'] = Variable<int>(minutos);
+    map['estado'] = Variable<String>(estado);
+    if (!nullToAbsent || tipoDocumentoId != null) {
+      map['tipo_documento_id'] = Variable<String>(tipoDocumentoId);
+    }
+    if (!nullToAbsent || numeroGde != null) {
+      map['numero_gde'] = Variable<String>(numeroGde);
+    }
+    if (!nullToAbsent || adjuntoPath != null) {
+      map['adjunto_path'] = Variable<String>(adjuntoPath);
+    }
+    if (!nullToAbsent || adjuntoLocal != null) {
+      map['adjunto_local'] = Variable<String>(adjuntoLocal);
+    }
+    if (!nullToAbsent || observacion != null) {
+      map['observacion'] = Variable<String>(observacion);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['revision'] = Variable<int>(revision);
+    {
+      map['sync_status'] = Variable<String>(
+        $BancoMovimientosTable.$convertersyncStatus.toSql(syncStatus),
+      );
+    }
+    if (!nullToAbsent || syncError != null) {
+      map['sync_error'] = Variable<String>(syncError);
+    }
+    return map;
+  }
+
+  BancoMovimientosCompanion toCompanion(bool nullToAbsent) {
+    return BancoMovimientosCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      tipo: Value(tipo),
+      alcance: alcance == null && nullToAbsent
+          ? const Value.absent()
+          : Value(alcance),
+      fecha: Value(fecha),
+      minutos: Value(minutos),
+      estado: Value(estado),
+      tipoDocumentoId: tipoDocumentoId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(tipoDocumentoId),
+      numeroGde: numeroGde == null && nullToAbsent
+          ? const Value.absent()
+          : Value(numeroGde),
+      adjuntoPath: adjuntoPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(adjuntoPath),
+      adjuntoLocal: adjuntoLocal == null && nullToAbsent
+          ? const Value.absent()
+          : Value(adjuntoLocal),
+      observacion: observacion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(observacion),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      updatedAt: Value(updatedAt),
+      revision: Value(revision),
+      syncStatus: Value(syncStatus),
+      syncError: syncError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncError),
+    );
+  }
+
+  factory LocalMovimiento.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalMovimiento(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      tipo: serializer.fromJson<String>(json['tipo']),
+      alcance: serializer.fromJson<String?>(json['alcance']),
+      fecha: serializer.fromJson<String>(json['fecha']),
+      minutos: serializer.fromJson<int>(json['minutos']),
+      estado: serializer.fromJson<String>(json['estado']),
+      tipoDocumentoId: serializer.fromJson<String?>(json['tipoDocumentoId']),
+      numeroGde: serializer.fromJson<String?>(json['numeroGde']),
+      adjuntoPath: serializer.fromJson<String?>(json['adjuntoPath']),
+      adjuntoLocal: serializer.fromJson<String?>(json['adjuntoLocal']),
+      observacion: serializer.fromJson<String?>(json['observacion']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      revision: serializer.fromJson<int>(json['revision']),
+      syncStatus: $BancoMovimientosTable.$convertersyncStatus.fromJson(
+        serializer.fromJson<String>(json['syncStatus']),
+      ),
+      syncError: serializer.fromJson<String?>(json['syncError']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'tipo': serializer.toJson<String>(tipo),
+      'alcance': serializer.toJson<String?>(alcance),
+      'fecha': serializer.toJson<String>(fecha),
+      'minutos': serializer.toJson<int>(minutos),
+      'estado': serializer.toJson<String>(estado),
+      'tipoDocumentoId': serializer.toJson<String?>(tipoDocumentoId),
+      'numeroGde': serializer.toJson<String?>(numeroGde),
+      'adjuntoPath': serializer.toJson<String?>(adjuntoPath),
+      'adjuntoLocal': serializer.toJson<String?>(adjuntoLocal),
+      'observacion': serializer.toJson<String?>(observacion),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'revision': serializer.toJson<int>(revision),
+      'syncStatus': serializer.toJson<String>(
+        $BancoMovimientosTable.$convertersyncStatus.toJson(syncStatus),
+      ),
+      'syncError': serializer.toJson<String?>(syncError),
+    };
+  }
+
+  LocalMovimiento copyWith({
+    String? id,
+    String? userId,
+    String? tipo,
+    Value<String?> alcance = const Value.absent(),
+    String? fecha,
+    int? minutos,
+    String? estado,
+    Value<String?> tipoDocumentoId = const Value.absent(),
+    Value<String?> numeroGde = const Value.absent(),
+    Value<String?> adjuntoPath = const Value.absent(),
+    Value<String?> adjuntoLocal = const Value.absent(),
+    Value<String?> observacion = const Value.absent(),
+    Value<DateTime?> deletedAt = const Value.absent(),
+    DateTime? updatedAt,
+    int? revision,
+    SyncStatus? syncStatus,
+    Value<String?> syncError = const Value.absent(),
+  }) => LocalMovimiento(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    tipo: tipo ?? this.tipo,
+    alcance: alcance.present ? alcance.value : this.alcance,
+    fecha: fecha ?? this.fecha,
+    minutos: minutos ?? this.minutos,
+    estado: estado ?? this.estado,
+    tipoDocumentoId: tipoDocumentoId.present
+        ? tipoDocumentoId.value
+        : this.tipoDocumentoId,
+    numeroGde: numeroGde.present ? numeroGde.value : this.numeroGde,
+    adjuntoPath: adjuntoPath.present ? adjuntoPath.value : this.adjuntoPath,
+    adjuntoLocal: adjuntoLocal.present ? adjuntoLocal.value : this.adjuntoLocal,
+    observacion: observacion.present ? observacion.value : this.observacion,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    revision: revision ?? this.revision,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncError: syncError.present ? syncError.value : this.syncError,
+  );
+  LocalMovimiento copyWithCompanion(BancoMovimientosCompanion data) {
+    return LocalMovimiento(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      tipo: data.tipo.present ? data.tipo.value : this.tipo,
+      alcance: data.alcance.present ? data.alcance.value : this.alcance,
+      fecha: data.fecha.present ? data.fecha.value : this.fecha,
+      minutos: data.minutos.present ? data.minutos.value : this.minutos,
+      estado: data.estado.present ? data.estado.value : this.estado,
+      tipoDocumentoId: data.tipoDocumentoId.present
+          ? data.tipoDocumentoId.value
+          : this.tipoDocumentoId,
+      numeroGde: data.numeroGde.present ? data.numeroGde.value : this.numeroGde,
+      adjuntoPath: data.adjuntoPath.present
+          ? data.adjuntoPath.value
+          : this.adjuntoPath,
+      adjuntoLocal: data.adjuntoLocal.present
+          ? data.adjuntoLocal.value
+          : this.adjuntoLocal,
+      observacion: data.observacion.present
+          ? data.observacion.value
+          : this.observacion,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      revision: data.revision.present ? data.revision.value : this.revision,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncError: data.syncError.present ? data.syncError.value : this.syncError,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalMovimiento(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('tipo: $tipo, ')
+          ..write('alcance: $alcance, ')
+          ..write('fecha: $fecha, ')
+          ..write('minutos: $minutos, ')
+          ..write('estado: $estado, ')
+          ..write('tipoDocumentoId: $tipoDocumentoId, ')
+          ..write('numeroGde: $numeroGde, ')
+          ..write('adjuntoPath: $adjuntoPath, ')
+          ..write('adjuntoLocal: $adjuntoLocal, ')
+          ..write('observacion: $observacion, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('revision: $revision, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncError: $syncError')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    tipo,
+    alcance,
+    fecha,
+    minutos,
+    estado,
+    tipoDocumentoId,
+    numeroGde,
+    adjuntoPath,
+    adjuntoLocal,
+    observacion,
+    deletedAt,
+    updatedAt,
+    revision,
+    syncStatus,
+    syncError,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalMovimiento &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.tipo == this.tipo &&
+          other.alcance == this.alcance &&
+          other.fecha == this.fecha &&
+          other.minutos == this.minutos &&
+          other.estado == this.estado &&
+          other.tipoDocumentoId == this.tipoDocumentoId &&
+          other.numeroGde == this.numeroGde &&
+          other.adjuntoPath == this.adjuntoPath &&
+          other.adjuntoLocal == this.adjuntoLocal &&
+          other.observacion == this.observacion &&
+          other.deletedAt == this.deletedAt &&
+          other.updatedAt == this.updatedAt &&
+          other.revision == this.revision &&
+          other.syncStatus == this.syncStatus &&
+          other.syncError == this.syncError);
+}
+
+class BancoMovimientosCompanion extends UpdateCompanion<LocalMovimiento> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> tipo;
+  final Value<String?> alcance;
+  final Value<String> fecha;
+  final Value<int> minutos;
+  final Value<String> estado;
+  final Value<String?> tipoDocumentoId;
+  final Value<String?> numeroGde;
+  final Value<String?> adjuntoPath;
+  final Value<String?> adjuntoLocal;
+  final Value<String?> observacion;
+  final Value<DateTime?> deletedAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> revision;
+  final Value<SyncStatus> syncStatus;
+  final Value<String?> syncError;
+  final Value<int> rowid;
+  const BancoMovimientosCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.tipo = const Value.absent(),
+    this.alcance = const Value.absent(),
+    this.fecha = const Value.absent(),
+    this.minutos = const Value.absent(),
+    this.estado = const Value.absent(),
+    this.tipoDocumentoId = const Value.absent(),
+    this.numeroGde = const Value.absent(),
+    this.adjuntoPath = const Value.absent(),
+    this.adjuntoLocal = const Value.absent(),
+    this.observacion = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.revision = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncError = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BancoMovimientosCompanion.insert({
+    required String id,
+    required String userId,
+    required String tipo,
+    this.alcance = const Value.absent(),
+    required String fecha,
+    required int minutos,
+    this.estado = const Value.absent(),
+    this.tipoDocumentoId = const Value.absent(),
+    this.numeroGde = const Value.absent(),
+    this.adjuntoPath = const Value.absent(),
+    this.adjuntoLocal = const Value.absent(),
+    this.observacion = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    required DateTime updatedAt,
+    this.revision = const Value.absent(),
+    required SyncStatus syncStatus,
+    this.syncError = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       tipo = Value(tipo),
+       fecha = Value(fecha),
+       minutos = Value(minutos),
+       updatedAt = Value(updatedAt),
+       syncStatus = Value(syncStatus);
+  static Insertable<LocalMovimiento> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? tipo,
+    Expression<String>? alcance,
+    Expression<String>? fecha,
+    Expression<int>? minutos,
+    Expression<String>? estado,
+    Expression<String>? tipoDocumentoId,
+    Expression<String>? numeroGde,
+    Expression<String>? adjuntoPath,
+    Expression<String>? adjuntoLocal,
+    Expression<String>? observacion,
+    Expression<DateTime>? deletedAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? revision,
+    Expression<String>? syncStatus,
+    Expression<String>? syncError,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (tipo != null) 'tipo': tipo,
+      if (alcance != null) 'alcance': alcance,
+      if (fecha != null) 'fecha': fecha,
+      if (minutos != null) 'minutos': minutos,
+      if (estado != null) 'estado': estado,
+      if (tipoDocumentoId != null) 'tipo_documento_id': tipoDocumentoId,
+      if (numeroGde != null) 'numero_gde': numeroGde,
+      if (adjuntoPath != null) 'adjunto_path': adjuntoPath,
+      if (adjuntoLocal != null) 'adjunto_local': adjuntoLocal,
+      if (observacion != null) 'observacion': observacion,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (revision != null) 'revision': revision,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncError != null) 'sync_error': syncError,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BancoMovimientosCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? tipo,
+    Value<String?>? alcance,
+    Value<String>? fecha,
+    Value<int>? minutos,
+    Value<String>? estado,
+    Value<String?>? tipoDocumentoId,
+    Value<String?>? numeroGde,
+    Value<String?>? adjuntoPath,
+    Value<String?>? adjuntoLocal,
+    Value<String?>? observacion,
+    Value<DateTime?>? deletedAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? revision,
+    Value<SyncStatus>? syncStatus,
+    Value<String?>? syncError,
+    Value<int>? rowid,
+  }) {
+    return BancoMovimientosCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      tipo: tipo ?? this.tipo,
+      alcance: alcance ?? this.alcance,
+      fecha: fecha ?? this.fecha,
+      minutos: minutos ?? this.minutos,
+      estado: estado ?? this.estado,
+      tipoDocumentoId: tipoDocumentoId ?? this.tipoDocumentoId,
+      numeroGde: numeroGde ?? this.numeroGde,
+      adjuntoPath: adjuntoPath ?? this.adjuntoPath,
+      adjuntoLocal: adjuntoLocal ?? this.adjuntoLocal,
+      observacion: observacion ?? this.observacion,
+      deletedAt: deletedAt ?? this.deletedAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      revision: revision ?? this.revision,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncError: syncError ?? this.syncError,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (tipo.present) {
+      map['tipo'] = Variable<String>(tipo.value);
+    }
+    if (alcance.present) {
+      map['alcance'] = Variable<String>(alcance.value);
+    }
+    if (fecha.present) {
+      map['fecha'] = Variable<String>(fecha.value);
+    }
+    if (minutos.present) {
+      map['minutos'] = Variable<int>(minutos.value);
+    }
+    if (estado.present) {
+      map['estado'] = Variable<String>(estado.value);
+    }
+    if (tipoDocumentoId.present) {
+      map['tipo_documento_id'] = Variable<String>(tipoDocumentoId.value);
+    }
+    if (numeroGde.present) {
+      map['numero_gde'] = Variable<String>(numeroGde.value);
+    }
+    if (adjuntoPath.present) {
+      map['adjunto_path'] = Variable<String>(adjuntoPath.value);
+    }
+    if (adjuntoLocal.present) {
+      map['adjunto_local'] = Variable<String>(adjuntoLocal.value);
+    }
+    if (observacion.present) {
+      map['observacion'] = Variable<String>(observacion.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (revision.present) {
+      map['revision'] = Variable<int>(revision.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(
+        $BancoMovimientosTable.$convertersyncStatus.toSql(syncStatus.value),
+      );
+    }
+    if (syncError.present) {
+      map['sync_error'] = Variable<String>(syncError.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BancoMovimientosCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('tipo: $tipo, ')
+          ..write('alcance: $alcance, ')
+          ..write('fecha: $fecha, ')
+          ..write('minutos: $minutos, ')
+          ..write('estado: $estado, ')
+          ..write('tipoDocumentoId: $tipoDocumentoId, ')
+          ..write('numeroGde: $numeroGde, ')
+          ..write('adjuntoPath: $adjuntoPath, ')
+          ..write('adjuntoLocal: $adjuntoLocal, ')
+          ..write('observacion: $observacion, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('revision: $revision, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncError: $syncError, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2182,6 +3737,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ProfilesTable profiles = $ProfilesTable(this);
   late final $SyncStateTable syncState = $SyncStateTable(this);
   late final $LocalPhotosTable localPhotos = $LocalPhotosTable(this);
+  late final $TiposDocumentoGdeTable tiposDocumentoGde =
+      $TiposDocumentoGdeTable(this);
+  late final $BancoMovimientosTable bancoMovimientos = $BancoMovimientosTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2192,6 +3752,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     profiles,
     syncState,
     localPhotos,
+    tiposDocumentoGde,
+    bancoMovimientos,
   ];
 }
 
@@ -3357,6 +4919,767 @@ typedef $$LocalPhotosTableProcessedTableManager =
       LocalPhoto,
       PrefetchHooks Function()
     >;
+typedef $$TiposDocumentoGdeTableCreateCompanionBuilder =
+    TiposDocumentoGdeCompanion Function({
+      required String id,
+      required String userId,
+      required String codigo,
+      Value<String?> descripcion,
+      Value<DateTime?> deletedAt,
+      required DateTime updatedAt,
+      Value<int> revision,
+      required SyncStatus syncStatus,
+      Value<String?> syncError,
+      Value<int> rowid,
+    });
+typedef $$TiposDocumentoGdeTableUpdateCompanionBuilder =
+    TiposDocumentoGdeCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> codigo,
+      Value<String?> descripcion,
+      Value<DateTime?> deletedAt,
+      Value<DateTime> updatedAt,
+      Value<int> revision,
+      Value<SyncStatus> syncStatus,
+      Value<String?> syncError,
+      Value<int> rowid,
+    });
+
+class $$TiposDocumentoGdeTableFilterComposer
+    extends Composer<_$AppDatabase, $TiposDocumentoGdeTable> {
+  $$TiposDocumentoGdeTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get codigo => $composableBuilder(
+    column: $table.codigo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get descripcion => $composableBuilder(
+    column: $table.descripcion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get revision => $composableBuilder(
+    column: $table.revision,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<SyncStatus, SyncStatus, String>
+  get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<String> get syncError => $composableBuilder(
+    column: $table.syncError,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$TiposDocumentoGdeTableOrderingComposer
+    extends Composer<_$AppDatabase, $TiposDocumentoGdeTable> {
+  $$TiposDocumentoGdeTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get codigo => $composableBuilder(
+    column: $table.codigo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get descripcion => $composableBuilder(
+    column: $table.descripcion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get revision => $composableBuilder(
+    column: $table.revision,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncError => $composableBuilder(
+    column: $table.syncError,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$TiposDocumentoGdeTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TiposDocumentoGdeTable> {
+  $$TiposDocumentoGdeTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get codigo =>
+      $composableBuilder(column: $table.codigo, builder: (column) => column);
+
+  GeneratedColumn<String> get descripcion => $composableBuilder(
+    column: $table.descripcion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get revision =>
+      $composableBuilder(column: $table.revision, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<SyncStatus, String> get syncStatus =>
+      $composableBuilder(
+        column: $table.syncStatus,
+        builder: (column) => column,
+      );
+
+  GeneratedColumn<String> get syncError =>
+      $composableBuilder(column: $table.syncError, builder: (column) => column);
+}
+
+class $$TiposDocumentoGdeTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TiposDocumentoGdeTable,
+          LocalTipoDocumento,
+          $$TiposDocumentoGdeTableFilterComposer,
+          $$TiposDocumentoGdeTableOrderingComposer,
+          $$TiposDocumentoGdeTableAnnotationComposer,
+          $$TiposDocumentoGdeTableCreateCompanionBuilder,
+          $$TiposDocumentoGdeTableUpdateCompanionBuilder,
+          (
+            LocalTipoDocumento,
+            BaseReferences<
+              _$AppDatabase,
+              $TiposDocumentoGdeTable,
+              LocalTipoDocumento
+            >,
+          ),
+          LocalTipoDocumento,
+          PrefetchHooks Function()
+        > {
+  $$TiposDocumentoGdeTableTableManager(
+    _$AppDatabase db,
+    $TiposDocumentoGdeTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TiposDocumentoGdeTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TiposDocumentoGdeTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TiposDocumentoGdeTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> codigo = const Value.absent(),
+                Value<String?> descripcion = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> revision = const Value.absent(),
+                Value<SyncStatus> syncStatus = const Value.absent(),
+                Value<String?> syncError = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TiposDocumentoGdeCompanion(
+                id: id,
+                userId: userId,
+                codigo: codigo,
+                descripcion: descripcion,
+                deletedAt: deletedAt,
+                updatedAt: updatedAt,
+                revision: revision,
+                syncStatus: syncStatus,
+                syncError: syncError,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String codigo,
+                Value<String?> descripcion = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
+                required DateTime updatedAt,
+                Value<int> revision = const Value.absent(),
+                required SyncStatus syncStatus,
+                Value<String?> syncError = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TiposDocumentoGdeCompanion.insert(
+                id: id,
+                userId: userId,
+                codigo: codigo,
+                descripcion: descripcion,
+                deletedAt: deletedAt,
+                updatedAt: updatedAt,
+                revision: revision,
+                syncStatus: syncStatus,
+                syncError: syncError,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$TiposDocumentoGdeTable, LocalTipoDocumento>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $TiposDocumentoGdeTable,
+                    LocalTipoDocumento
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$TiposDocumentoGdeTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TiposDocumentoGdeTable,
+      LocalTipoDocumento,
+      $$TiposDocumentoGdeTableFilterComposer,
+      $$TiposDocumentoGdeTableOrderingComposer,
+      $$TiposDocumentoGdeTableAnnotationComposer,
+      $$TiposDocumentoGdeTableCreateCompanionBuilder,
+      $$TiposDocumentoGdeTableUpdateCompanionBuilder,
+      (
+        LocalTipoDocumento,
+        BaseReferences<
+          _$AppDatabase,
+          $TiposDocumentoGdeTable,
+          LocalTipoDocumento
+        >,
+      ),
+      LocalTipoDocumento,
+      PrefetchHooks Function()
+    >;
+typedef $$BancoMovimientosTableCreateCompanionBuilder =
+    BancoMovimientosCompanion Function({
+      required String id,
+      required String userId,
+      required String tipo,
+      Value<String?> alcance,
+      required String fecha,
+      required int minutos,
+      Value<String> estado,
+      Value<String?> tipoDocumentoId,
+      Value<String?> numeroGde,
+      Value<String?> adjuntoPath,
+      Value<String?> adjuntoLocal,
+      Value<String?> observacion,
+      Value<DateTime?> deletedAt,
+      required DateTime updatedAt,
+      Value<int> revision,
+      required SyncStatus syncStatus,
+      Value<String?> syncError,
+      Value<int> rowid,
+    });
+typedef $$BancoMovimientosTableUpdateCompanionBuilder =
+    BancoMovimientosCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> tipo,
+      Value<String?> alcance,
+      Value<String> fecha,
+      Value<int> minutos,
+      Value<String> estado,
+      Value<String?> tipoDocumentoId,
+      Value<String?> numeroGde,
+      Value<String?> adjuntoPath,
+      Value<String?> adjuntoLocal,
+      Value<String?> observacion,
+      Value<DateTime?> deletedAt,
+      Value<DateTime> updatedAt,
+      Value<int> revision,
+      Value<SyncStatus> syncStatus,
+      Value<String?> syncError,
+      Value<int> rowid,
+    });
+
+class $$BancoMovimientosTableFilterComposer
+    extends Composer<_$AppDatabase, $BancoMovimientosTable> {
+  $$BancoMovimientosTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get alcance => $composableBuilder(
+    column: $table.alcance,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fecha => $composableBuilder(
+    column: $table.fecha,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get minutos => $composableBuilder(
+    column: $table.minutos,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estado => $composableBuilder(
+    column: $table.estado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipoDocumentoId => $composableBuilder(
+    column: $table.tipoDocumentoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get numeroGde => $composableBuilder(
+    column: $table.numeroGde,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get adjuntoPath => $composableBuilder(
+    column: $table.adjuntoPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get adjuntoLocal => $composableBuilder(
+    column: $table.adjuntoLocal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get revision => $composableBuilder(
+    column: $table.revision,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<SyncStatus, SyncStatus, String>
+  get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<String> get syncError => $composableBuilder(
+    column: $table.syncError,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$BancoMovimientosTableOrderingComposer
+    extends Composer<_$AppDatabase, $BancoMovimientosTable> {
+  $$BancoMovimientosTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get alcance => $composableBuilder(
+    column: $table.alcance,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fecha => $composableBuilder(
+    column: $table.fecha,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get minutos => $composableBuilder(
+    column: $table.minutos,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estado => $composableBuilder(
+    column: $table.estado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipoDocumentoId => $composableBuilder(
+    column: $table.tipoDocumentoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get numeroGde => $composableBuilder(
+    column: $table.numeroGde,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get adjuntoPath => $composableBuilder(
+    column: $table.adjuntoPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get adjuntoLocal => $composableBuilder(
+    column: $table.adjuntoLocal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get revision => $composableBuilder(
+    column: $table.revision,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncError => $composableBuilder(
+    column: $table.syncError,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$BancoMovimientosTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BancoMovimientosTable> {
+  $$BancoMovimientosTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get tipo =>
+      $composableBuilder(column: $table.tipo, builder: (column) => column);
+
+  GeneratedColumn<String> get alcance =>
+      $composableBuilder(column: $table.alcance, builder: (column) => column);
+
+  GeneratedColumn<String> get fecha =>
+      $composableBuilder(column: $table.fecha, builder: (column) => column);
+
+  GeneratedColumn<int> get minutos =>
+      $composableBuilder(column: $table.minutos, builder: (column) => column);
+
+  GeneratedColumn<String> get estado =>
+      $composableBuilder(column: $table.estado, builder: (column) => column);
+
+  GeneratedColumn<String> get tipoDocumentoId => $composableBuilder(
+    column: $table.tipoDocumentoId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get numeroGde =>
+      $composableBuilder(column: $table.numeroGde, builder: (column) => column);
+
+  GeneratedColumn<String> get adjuntoPath => $composableBuilder(
+    column: $table.adjuntoPath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get adjuntoLocal => $composableBuilder(
+    column: $table.adjuntoLocal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get revision =>
+      $composableBuilder(column: $table.revision, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<SyncStatus, String> get syncStatus =>
+      $composableBuilder(
+        column: $table.syncStatus,
+        builder: (column) => column,
+      );
+
+  GeneratedColumn<String> get syncError =>
+      $composableBuilder(column: $table.syncError, builder: (column) => column);
+}
+
+class $$BancoMovimientosTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BancoMovimientosTable,
+          LocalMovimiento,
+          $$BancoMovimientosTableFilterComposer,
+          $$BancoMovimientosTableOrderingComposer,
+          $$BancoMovimientosTableAnnotationComposer,
+          $$BancoMovimientosTableCreateCompanionBuilder,
+          $$BancoMovimientosTableUpdateCompanionBuilder,
+          (
+            LocalMovimiento,
+            BaseReferences<
+              _$AppDatabase,
+              $BancoMovimientosTable,
+              LocalMovimiento
+            >,
+          ),
+          LocalMovimiento,
+          PrefetchHooks Function()
+        > {
+  $$BancoMovimientosTableTableManager(
+    _$AppDatabase db,
+    $BancoMovimientosTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BancoMovimientosTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BancoMovimientosTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BancoMovimientosTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> tipo = const Value.absent(),
+                Value<String?> alcance = const Value.absent(),
+                Value<String> fecha = const Value.absent(),
+                Value<int> minutos = const Value.absent(),
+                Value<String> estado = const Value.absent(),
+                Value<String?> tipoDocumentoId = const Value.absent(),
+                Value<String?> numeroGde = const Value.absent(),
+                Value<String?> adjuntoPath = const Value.absent(),
+                Value<String?> adjuntoLocal = const Value.absent(),
+                Value<String?> observacion = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> revision = const Value.absent(),
+                Value<SyncStatus> syncStatus = const Value.absent(),
+                Value<String?> syncError = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BancoMovimientosCompanion(
+                id: id,
+                userId: userId,
+                tipo: tipo,
+                alcance: alcance,
+                fecha: fecha,
+                minutos: minutos,
+                estado: estado,
+                tipoDocumentoId: tipoDocumentoId,
+                numeroGde: numeroGde,
+                adjuntoPath: adjuntoPath,
+                adjuntoLocal: adjuntoLocal,
+                observacion: observacion,
+                deletedAt: deletedAt,
+                updatedAt: updatedAt,
+                revision: revision,
+                syncStatus: syncStatus,
+                syncError: syncError,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String tipo,
+                Value<String?> alcance = const Value.absent(),
+                required String fecha,
+                required int minutos,
+                Value<String> estado = const Value.absent(),
+                Value<String?> tipoDocumentoId = const Value.absent(),
+                Value<String?> numeroGde = const Value.absent(),
+                Value<String?> adjuntoPath = const Value.absent(),
+                Value<String?> adjuntoLocal = const Value.absent(),
+                Value<String?> observacion = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
+                required DateTime updatedAt,
+                Value<int> revision = const Value.absent(),
+                required SyncStatus syncStatus,
+                Value<String?> syncError = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BancoMovimientosCompanion.insert(
+                id: id,
+                userId: userId,
+                tipo: tipo,
+                alcance: alcance,
+                fecha: fecha,
+                minutos: minutos,
+                estado: estado,
+                tipoDocumentoId: tipoDocumentoId,
+                numeroGde: numeroGde,
+                adjuntoPath: adjuntoPath,
+                adjuntoLocal: adjuntoLocal,
+                observacion: observacion,
+                deletedAt: deletedAt,
+                updatedAt: updatedAt,
+                revision: revision,
+                syncStatus: syncStatus,
+                syncError: syncError,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$BancoMovimientosTable, LocalMovimiento>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $BancoMovimientosTable,
+                    LocalMovimiento
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$BancoMovimientosTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BancoMovimientosTable,
+      LocalMovimiento,
+      $$BancoMovimientosTableFilterComposer,
+      $$BancoMovimientosTableOrderingComposer,
+      $$BancoMovimientosTableAnnotationComposer,
+      $$BancoMovimientosTableCreateCompanionBuilder,
+      $$BancoMovimientosTableUpdateCompanionBuilder,
+      (
+        LocalMovimiento,
+        BaseReferences<_$AppDatabase, $BancoMovimientosTable, LocalMovimiento>,
+      ),
+      LocalMovimiento,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3371,4 +5694,8 @@ class $AppDatabaseManager {
       $$SyncStateTableTableManager(_db, _db.syncState);
   $$LocalPhotosTableTableManager get localPhotos =>
       $$LocalPhotosTableTableManager(_db, _db.localPhotos);
+  $$TiposDocumentoGdeTableTableManager get tiposDocumentoGde =>
+      $$TiposDocumentoGdeTableTableManager(_db, _db.tiposDocumentoGde);
+  $$BancoMovimientosTableTableManager get bancoMovimientos =>
+      $$BancoMovimientosTableTableManager(_db, _db.bancoMovimientos);
 }

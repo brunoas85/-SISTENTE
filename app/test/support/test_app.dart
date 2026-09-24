@@ -16,6 +16,8 @@ class TestDeps {
       photos = InMemoryPhotoStore(),
       capture = FakePhotoCapture(fakeJpeg()),
       remote = FakeFichadasRemote()..online = false,
+      bancoRemote = FakeBancoRemote()..online = false,
+      picker = FakeAttachmentPicker(),
       now = now ?? DateTime(2026, 9, 24, 8, 2);
 
   final FakeAuthRepository auth;
@@ -23,6 +25,8 @@ class TestDeps {
   final InMemoryPhotoStore photos;
   final FakePhotoCapture capture;
   final FakeFichadasRemote remote;
+  final FakeBancoRemote bancoRemote;
+  final FakeAttachmentPicker picker;
   DateTime now;
 
   List<Override> get overrides => [
@@ -32,6 +36,8 @@ class TestDeps {
     photoCaptureProvider.overrideWithValue(capture),
     photoCompressorProvider.overrideWithValue((bytes) async => bytes),
     fichadasRemoteProvider.overrideWithValue(remote),
+    bancoRemoteProvider.overrideWithValue(bancoRemote),
+    attachmentPickerProvider.overrideWithValue(picker),
     connectivityOnlineProvider.overrideWith((ref) => Stream.value(false)),
     syncRetryIntervalProvider.overrideWithValue(null),
     clockProvider.overrideWithValue(() => now),

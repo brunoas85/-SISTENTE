@@ -2,6 +2,8 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../core/auth/auth_providers.dart';
+import 'attachments/attachment_picker.dart';
+import 'banco/banco_repository.dart';
 import 'fichadas/fichadas_repository.dart';
 import 'local/app_database.dart';
 import 'local/open_connection.dart';
@@ -9,6 +11,8 @@ import 'perfil/perfil_repository.dart';
 import 'photos/photo_capture.dart';
 import 'photos/photo_compressor.dart';
 import 'photos/photo_store.dart';
+import 'sync/banco_remote.dart';
+import 'sync/banco_sync.dart';
 import 'sync/fichadas_remote.dart';
 import 'sync/sync_service.dart';
 
@@ -49,6 +53,21 @@ PerfilRepository perfilRepository(Ref ref) => PerfilRepository(
 );
 
 @Riverpod(keepAlive: true)
+BancoRepository bancoRepository(Ref ref) => BancoRepository(
+  ref.watch(appDatabaseProvider),
+  ref.watch(photoStoreProvider),
+  clock: ref.watch(clockProvider),
+);
+
+@Riverpod(keepAlive: true)
+AttachmentPicker attachmentPicker(Ref ref) =>
+    const FileSelectorAttachmentPicker();
+
+@Riverpod(keepAlive: true)
+BancoRemote bancoRemote(Ref ref) =>
+    SupabaseBancoRemote(ref.watch(supabaseClientProvider));
+
+@Riverpod(keepAlive: true)
 FichadasRemote fichadasRemote(Ref ref) =>
     SupabaseFichadasRemote(ref.watch(supabaseClientProvider));
 
@@ -57,6 +76,10 @@ SyncService syncService(Ref ref) => SyncService(
   repository: ref.watch(fichadasRepositoryProvider),
   perfiles: ref.watch(perfilRepositoryProvider),
   remote: ref.watch(fichadasRemoteProvider),
+  banco: BancoSync(
+    repository: ref.watch(bancoRepositoryProvider),
+    remote: ref.watch(bancoRemoteProvider),
+  ),
   clock: ref.watch(clockProvider),
 );
 

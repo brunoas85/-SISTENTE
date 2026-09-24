@@ -3,6 +3,7 @@ import '../fichadas/fichadas_repository.dart';
 import '../fichadas/remote_fichada.dart';
 import '../local/app_database.dart';
 import '../perfil/perfil_repository.dart';
+import 'banco_sync.dart';
 import 'fichadas_remote.dart';
 
 /// Ruta de la foto en el bucket `comprobantes`:
@@ -48,7 +49,9 @@ class SyncResult {
 ///    upsert de la fila (gana el último que sincroniza).
 /// 2. Baja los cambios del servidor sin pisar lo que falta subir.
 /// 3. Actualiza los feriados cada tanto (o ya, si no hay ninguno guardado).
-/// 4. Sube el agrupamiento elegido y baja el perfil.
+/// 4. Banco de horas: tipos de documento GDE y movimientos (ver
+///    [BancoSync]), si se configuró.
+/// 5. Sube el agrupamiento elegido y baja el perfil.
 ///
 /// Si no hay red corta sin marcar errores: las filas quedan pendientes.
 class SyncService {
@@ -56,6 +59,7 @@ class SyncService {
     required FichadasRepository repository,
     required PerfilRepository perfiles,
     required FichadasRemote remote,
+    this.banco,
     DateTime Function()? clock,
     this.holidaysRefreshEvery = const Duration(hours: 12),
   }) : _repo = repository,
@@ -68,6 +72,9 @@ class SyncService {
   final FichadasRemote _api;
   final DateTime Function() _clock;
   final Duration holidaysRefreshEvery;
+
+  /// Sincronización del banco de horas (`null` = no se sincroniza).
+  final BancoSync? banco;
 
   /// Cursor de la última descarga, por usuario.
   static String pulledAtKey(String userId) => 'fichadas_pulled_at:$userId';
@@ -174,7 +181,28 @@ class SyncService {
       message = e.message;
     }
 
-    // 4. Perfil (agrupamiento). Un rechazo no frena el resto. Si el servidor
+    // 4. Banco de horas. Sin red corta; un rechazo no frena el resto.
+    final b = banco;
+    if (b != null) {
+      try {
+        final r = await b.run(userId);
+        uploaded += r.uploaded;
+        failed += r.failed;
+        downloaded += r.downloaded;
+        if (r.again) _again = true;
+        message = r.message ?? message;
+      } on RemoteUnavailableException catch (e) {
+        return SyncResult(
+          uploaded: uploaded,
+          failed: failed,
+          downloaded: downloaded,
+          offline: true,
+          message: e.message,
+        );
+      }
+    }
+
+    // 5. Perfil (agrupamiento). Un rechazo no frena el resto. Si el servidor
     // todavía no tiene la columna, lo elegido sigue pendiente (se usa local)
     // y se reintenta en la próxima pasada.
     try {

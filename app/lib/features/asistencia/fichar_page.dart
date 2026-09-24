@@ -113,7 +113,7 @@ class _FicharPageState extends ConsumerState<FicharPage> {
         content: Text(
           pendientes == 0
               ? '¿Querés cerrar la sesión?'
-              : 'Tenés $pendientes fichadas sin sincronizar. Quedan guardadas '
+              : 'Tenés $pendientes cambios sin sincronizar. Quedan guardados '
                     'en este dispositivo y se suben cuando vuelvas a entrar.',
         ),
         actions: [
@@ -332,34 +332,28 @@ class _SaldoLinea extends StatelessWidget {
     final base = theme.textTheme.bodyLarge;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Tooltip(
-        message:
-            'Calculado solo con las fichadas. Todavía no incluye '
-            'acumulaciones ni usufructos cargados a mano.',
-        triggerMode: TooltipTriggerMode.tap,
-        child: Text.rich(
-          key: const Key('saldo'),
-          TextSpan(
-            style: base,
-            children: [
-              const TextSpan(text: 'Banco · mes '),
-              TextSpan(
-                text: formatMinutes(resumen.saldoMesMinutes),
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: colorFor(resumen.saldoMesMinutes),
-                ),
+      child: Text.rich(
+        key: const Key('saldo'),
+        TextSpan(
+          style: base,
+          children: [
+            const TextSpan(text: 'Banco · mes '),
+            TextSpan(
+              text: formatMinutes(resumen.saldoMesMinutes),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: colorFor(resumen.saldoMesMinutes),
               ),
-              const TextSpan(text: ' · total '),
-              TextSpan(
-                text: formatMinutes(resumen.saldoTotalMinutes),
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: colorFor(resumen.saldoTotalMinutes),
-                ),
+            ),
+            const TextSpan(text: ' · total '),
+            TextSpan(
+              text: formatMinutes(resumen.saldoTotalMinutes),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: colorFor(resumen.saldoTotalMinutes),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

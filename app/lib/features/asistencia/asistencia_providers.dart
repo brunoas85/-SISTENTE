@@ -1,10 +1,13 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/auth/auth_providers.dart';
+import '../../data/banco/banco_repository.dart';
+import '../../data/banco/movimiento.dart';
 import '../../data/fichadas/fichadas_repository.dart';
 import '../../data/local/app_database.dart';
 import '../../data/providers.dart';
 import '../../domain/domain.dart';
+import '../banco_horas/banco_providers.dart';
 import '../perfil/perfil_providers.dart';
 
 part 'asistencia_providers.g.dart';
@@ -27,12 +30,13 @@ Stream<List<LocalFichada>> misFichadas(Ref ref) {
 Stream<List<Holiday>> feriadosLocales(Ref ref) =>
     ref.watch(fichadasRepositoryProvider).watchHolidays();
 
-/// Fichadas sin sincronizar (pendientes o con error).
+/// Cambios sin sincronizar (pendientes o con error): fichadas, movimientos
+/// del banco y tipos de documento. Es el contador global de la UI.
 @riverpod
 Stream<int> pendientesCount(Ref ref) {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return Stream.value(0);
-  return ref.watch(fichadasRepositoryProvider).watchUnsyncedCount(userId);
+  return watchUnsyncedTotal(ref.watch(appDatabaseProvider), userId);
 }
 
 /// Lo que muestra la pantalla Fichar. Todos los cálculos salen de `domain/`.
@@ -57,10 +61,12 @@ class ResumenFichar {
   /// Cálculo del día de hoy.
   final DayResult dia;
 
-  /// Variación del banco en el mes de hoy (solo fichadas).
+  /// Variación del banco en el mes de hoy, del 1 hasta hoy inclusive
+  /// (fichadas y movimientos manuales).
   final int saldoMesMinutes;
 
-  /// Saldo del banco desde el inicio del control hasta hoy (solo fichadas).
+  /// Saldo del banco hasta hoy inclusive: fichadas, acumulaciones y
+  /// usufructos vigentes (los perdidos no computan).
   final int saldoTotalMinutes;
 
   /// Tramos de días anteriores que quedaron sin egreso.
@@ -124,33 +130,37 @@ enum AccionFichar {
 
 /// Arma el [ResumenFichar] con el calculador de `domain/`.
 ///
-/// La jornada sale del [agrupamiento] (8 h o 7 h; 480 si no hay). Todavía
-/// no incluye los movimientos manuales del banco (acumulaciones y
-/// usufructos) ni las vigencias de `jornadas`, que no se bajan al
+/// El saldo es el real del banco: fichadas + movimientos manuales
+/// (acumulaciones y usufructos; los perdidos no computan), con la jornada
+/// del [agrupamiento] (8 h o 7 h; 480 si no hay), los feriados y el inicio
+/// del control. Las vigencias de `jornadas` todavía no se bajan al
 /// dispositivo.
 ResumenFichar buildResumenFichar({
   required CalendarDate hoy,
   required List<LocalFichada> fichadas,
   required List<Holiday> feriados,
+  List<LocalMovimiento> movimientos = const [],
   Agrupamiento? agrupamiento,
 }) {
   final records = [for (final f in fichadas) f.toDailyRecord()];
-  final calculator = DayCalculator(
-    holidays: feriados,
+  final movements = [for (final m in movimientos) m.toBankMovement()];
+  final calculator = buildBankCalculator(
     today: hoy,
-    controlStart: controlStartFrom(records),
+    records: records,
+    holidays: feriados,
     agrupamiento: agrupamiento,
   );
-  final mes = buildMonthlySummary(
-    year: hoy.year,
-    month: hoy.month,
+  final mes = calculateBankBalance(
     calculator: calculator,
     records: records,
-  );
-  final total = calculateBankBalance(
-    calculator: calculator,
-    records: records,
+    movements: movements,
+    from: CalendarDate(hoy.year, hoy.month, 1),
     to: hoy,
+  );
+  final total = calculateBankStatus(
+    calculator: calculator,
+    records: records,
+    movements: movements,
   );
   return ResumenFichar(
     hoy: hoy,
@@ -158,8 +168,8 @@ ResumenFichar buildResumenFichar({
       for (final f in fichadas)
         if (f.date == hoy) f,
     ]..sort((a, b) => a.ingresoMin.compareTo(b.ingresoMin)),
-    dia: calculator.calculate(hoy, records: records),
-    saldoMesMinutes: mes.bankDeltaMinutes,
+    dia: calculator.calculate(hoy, records: records, movements: movements),
+    saldoMesMinutes: mes.balanceMinutes,
     saldoTotalMinutes: total.balanceMinutes,
     todas: fichadas,
     diaNoLaborable: nonWorkingDayFor(hoy, feriados),
@@ -176,6 +186,7 @@ AsyncValue<ResumenFichar> resumenFichar(Ref ref) {
   final fichadas = ref.watch(misFichadasProvider);
   final feriados = ref.watch(feriadosLocalesProvider);
   final perfil = ref.watch(miPerfilProvider);
+  final movimientos = ref.watch(misMovimientosProvider);
   final hoy = ref.watch(todayProvider);
 
   if (fichadas.hasError) {
@@ -190,14 +201,24 @@ AsyncValue<ResumenFichar> resumenFichar(Ref ref) {
       feriados.stackTrace ?? StackTrace.current,
     );
   }
+  if (movimientos.hasError) {
+    return AsyncError(
+      movimientos.error!,
+      movimientos.stackTrace ?? StackTrace.current,
+    );
+  }
   final f = fichadas.value;
   final h = feriados.value;
-  if (f == null || h == null || perfil.isLoading) return const AsyncLoading();
+  final m = movimientos.value;
+  if (f == null || h == null || m == null || perfil.isLoading) {
+    return const AsyncLoading();
+  }
   return AsyncData(
     buildResumenFichar(
       hoy: hoy,
       fichadas: f,
       feriados: h,
+      movimientos: m,
       // Si no se pudo leer el perfil, se usa la jornada por defecto.
       agrupamiento: perfil.value?.agrupamiento,
     ),

@@ -4,6 +4,7 @@ library;
 
 export 'agrupamiento.dart';
 export 'bank_balance.dart';
+export 'bank_status.dart';
 export 'calendar_date.dart';
 export 'day_calculation.dart';
 export 'models.dart';

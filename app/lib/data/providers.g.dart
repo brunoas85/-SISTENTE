@@ -319,6 +319,135 @@ final class PerfilRepositoryProvider
 
 String _$perfilRepositoryHash() => r'cf73956394e982e80e0c747c32900f1a510db114';
 
+@ProviderFor(bancoRepository)
+final bancoRepositoryProvider = BancoRepositoryProvider._();
+
+final class BancoRepositoryProvider
+    extends
+        $FunctionalProvider<BancoRepository, BancoRepository, BancoRepository>
+    with $Provider<BancoRepository> {
+  BancoRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'bancoRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$bancoRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<BancoRepository> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  BancoRepository create(Ref ref) {
+    return bancoRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(BancoRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<BancoRepository>(value),
+    );
+  }
+}
+
+String _$bancoRepositoryHash() => r'4076107bd2bcf696b2f8e1bb5dfd7dec34c6bec2';
+
+@ProviderFor(attachmentPicker)
+final attachmentPickerProvider = AttachmentPickerProvider._();
+
+final class AttachmentPickerProvider
+    extends
+        $FunctionalProvider<
+          AttachmentPicker,
+          AttachmentPicker,
+          AttachmentPicker
+        >
+    with $Provider<AttachmentPicker> {
+  AttachmentPickerProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'attachmentPickerProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$attachmentPickerHash();
+
+  @$internal
+  @override
+  $ProviderElement<AttachmentPicker> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  AttachmentPicker create(Ref ref) {
+    return attachmentPicker(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AttachmentPicker value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AttachmentPicker>(value),
+    );
+  }
+}
+
+String _$attachmentPickerHash() => r'854a1bc49db25c3edab17fc6b1ce4f65e083f9b8';
+
+@ProviderFor(bancoRemote)
+final bancoRemoteProvider = BancoRemoteProvider._();
+
+final class BancoRemoteProvider
+    extends $FunctionalProvider<BancoRemote, BancoRemote, BancoRemote>
+    with $Provider<BancoRemote> {
+  BancoRemoteProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'bancoRemoteProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$bancoRemoteHash();
+
+  @$internal
+  @override
+  $ProviderElement<BancoRemote> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  BancoRemote create(Ref ref) {
+    return bancoRemote(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(BancoRemote value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<BancoRemote>(value),
+    );
+  }
+}
+
+String _$bancoRemoteHash() => r'df5f24e59defb53a3ad0017a760162c67b7de189';
+
 @ProviderFor(fichadasRemote)
 final fichadasRemoteProvider = FichadasRemoteProvider._();
 
@@ -399,7 +528,7 @@ final class SyncServiceProvider
   }
 }
 
-String _$syncServiceHash() => r'f9c704c36071fbd387d1d26fdb2989450fa4e3d2';
+String _$syncServiceHash() => r'ae7cb8dcb869dfcd54d79c796e99c0c41238bcdf';
 
 /// `true` si el dispositivo tiene alguna red (no garantiza internet).
 

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../features/asistencia/fichar_page.dart';
+import '../../features/banco_horas/banco_page.dart';
 import '../../features/auth/login_page.dart';
 import '../../features/feriados/feriados_page.dart';
 import '../../features/perfil/perfil_page.dart';
@@ -14,6 +15,7 @@ part 'app_router.g.dart';
 abstract final class Routes {
   static const login = '/login';
   static const fichar = '/fichar';
+  static const banco = '/banco';
   static const feriados = '/feriados';
   static const perfil = '/perfil';
 }
@@ -25,6 +27,12 @@ const shellDestinations = [
     label: 'Fichar',
     icon: Icons.fingerprint,
     selectedIcon: Icons.fingerprint,
+  ),
+  ShellDestination(
+    path: Routes.banco,
+    label: 'Banco',
+    icon: Icons.account_balance_wallet_outlined,
+    selectedIcon: Icons.account_balance_wallet,
   ),
   ShellDestination(
     path: Routes.feriados,
@@ -73,6 +81,11 @@ GoRouter appRouter(Ref ref) {
             path: Routes.fichar,
             pageBuilder: (context, state) =>
                 const NoTransitionPage(child: FicharPage()),
+          ),
+          GoRoute(
+            path: Routes.banco,
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: BancoPage()),
           ),
           GoRoute(
             path: Routes.feriados,
