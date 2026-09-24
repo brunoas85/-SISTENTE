@@ -79,7 +79,7 @@ Nunca usar horas estilo Excel (fracción de día): no representan saldos negativ
   - `usufructo`: una jornada completa (480 min) o parcial.
 - `saldo = Σ a_favor + Σ acumulacion - Σ deuda no cubierta - Σ usufructo vigente`.
   **Puede ser negativo** y la UI tiene que mostrarlo (formato `-24:00`, nunca `#####`).
-- Un usufructo `perdido` **no descuenta** del banco. Queda registrado solo como historial.
+- Un movimiento `perdido` (usufructo o acumulación) **no computa** en el banco. Queda registrado solo como historial.
 
 **Documentos GDE**
 - `FSOLI`, `FOESC`, etc. son **tipos de documento GDE** que respaldan los
@@ -98,7 +98,7 @@ Nunca usar horas estilo Excel (fracción de día): no representan saldos negativ
 
 **Resúmenes**
 - Siempre por **año + mes** (la planilla filtraba solo por el nombre del mes).
-- Días hábiles sin registro ni justificación → se marcan como *faltantes*
+- Días hábiles sin registro ni usufructo → se marcan como *faltantes* y restan la jornada del banco
   (hay que tener en cuenta los feriados nacionales de Argentina).
 
 ## Fichada con foto (celular)
@@ -149,6 +149,31 @@ supabase gen types dart ...     # tras cambiar el esquema
   descuenta, el a favor diario va al banco y FSOLI/FOESC son tipos de
   documento GDE que forman parte del banco, y la deuda diaria no cubierta
   resta del banco.
+- **Decisiones de Bruno (2026-09-24):**
+  - Puede haber varias fichadas en el mismo día (salir y volver). El trabajado
+    es la suma de los tramos, y si dos tramos se superponen es un conflicto.
+  - Un día hábil sin fichada ni usufructo es *faltante* y resta la jornada
+    completa del banco. Esto rige desde el inicio del control, que es la
+    primera fichada con la app; los días anteriores no restan.
+  - Un usufructo parcial en un día sin fichada queda para revisar, y un
+    usufructo en fin de semana o feriado descuenta igual.
+  - Para ver si alcanza el saldo de un usufructo se cuentan también los
+    usufructos ya cargados a futuro.
+  - Lo fichado en un fin de semana o feriado entra solo al banco como a favor.
+  - Los no laborables turísticos (puentes) no son días hábiles.
+  - Una acumulación también puede quedar `perdida` y entonces no computa. No
+    hay vencimiento automático: se marca a mano.
+  - Un usufructo total es igual a la jornada vigente, y no se puede usufructuar
+    más de lo que hay de saldo.
+  - No hay licencias fuera del banco: lo único que cubre un día es un usufructo.
+  - No hay turnos que crucen la medianoche.
+  - Los créditos de los cursos son enteros.
+  - Ante un conflicto de sincronización gana el último que sincroniza.
+  - Backend: Supabase en la nube (proyecto `umzfjkdeuvsyswoueafu`). No se usa
+    Docker local: las migraciones se aplican con `supabase db push`.
+  - Pendiente: usufructos de varios días, distinguir salida temprana de llegada
+    tarde, qué pasa con un usufructo parcial mayor que la deuda del día y si
+    las acumulaciones vencen.
 - **Agentes:** para UI, estado, navegación, cámara, offline y layout usá
   `frontend-flutter`. Para esquema, migraciones, RLS, Storage, Edge Functions
   e importación usá `backend-supabase`. Si un cambio toca los dos lados, primero
