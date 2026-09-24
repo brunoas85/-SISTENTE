@@ -20,7 +20,7 @@ void main() {
   setUp(() {
     db = newTestDatabase();
     photos = InMemoryPhotoStore();
-    final clock = steppingClock(DateTime(2026, 9, 24, 8));
+    final clock = steppingClock(DateTime(2026, 9, 24, 23));
     repo = FichadasRepository(db, photos, clock: clock, newId: sequentialIds());
     remote = FakeFichadasRemote();
     perfiles = PerfilRepository(db, clock: clock);
@@ -449,6 +449,8 @@ void main() {
       );
       await sync.sync(fakeUserId);
       expect(remote.rows[f.id]!.editado, isFalse);
+      expect(remote.rows[f.id]!.origen, 'manual');
+      expect(remote.rows[f.id]!.toJson()['origen'], 'manual');
 
       await repo.editarTramo(
         userId: fakeUserId,
@@ -462,11 +464,32 @@ void main() {
       expect(editado.ingresoOriginalMin, 480);
       expect(editado.editado, isTrue);
 
-      await repo.borrarTramo(userId: fakeUserId, id: f.id);
+      // Es la única fichada: borrarla vuelve el control a cero.
+      await repo.borrarTramo(
+        userId: fakeUserId,
+        id: f.id,
+        confirmarCambioInicio: true,
+      );
       final r = await sync.sync(fakeUserId);
       expect(r.failed, 0);
       expect(remote.rows[f.id]!.deletedAt, isNotNull);
       expect((await repo.findById(f.id))!.syncStatus, SyncStatus.synced);
     });
+  });
+
+  test('baja el origen del servidor (importado)', () async {
+    remote.putFromOtherDevice(
+      const RemoteFichada(
+        id: 'importada-ficticia',
+        userId: fakeUserId,
+        fecha: '2026-09-02',
+        ingresoMin: 480,
+        egresoMin: 960,
+        origen: 'importado',
+      ),
+    );
+    await sync.sync(fakeUserId);
+    final f = await repo.findById('importada-ficticia');
+    expect(f!.origenTipo, OrigenFichada.importado);
   });
 }

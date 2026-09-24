@@ -148,6 +148,16 @@ class $FichadasTable extends Fichadas
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _origenMeta = const VerificationMeta('origen');
+  @override
+  late final GeneratedColumn<String> origen = GeneratedColumn<String>(
+    'origen',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('dispositivo'),
+  );
   static const VerificationMeta _deletedAtMeta = const VerificationMeta(
     'deletedAt',
   );
@@ -217,6 +227,7 @@ class $FichadasTable extends Fichadas
     fotoIngresoLocal,
     fotoEgresoLocal,
     observacion,
+    origen,
     deletedAt,
     updatedAt,
     revision,
@@ -339,6 +350,12 @@ class $FichadasTable extends Fichadas
         ),
       );
     }
+    if (data.containsKey('origen')) {
+      context.handle(
+        _origenMeta,
+        origen.isAcceptableOrUnknown(data['origen']!, _origenMeta),
+      );
+    }
     if (data.containsKey('deleted_at')) {
       context.handle(
         _deletedAtMeta,
@@ -426,6 +443,10 @@ class $FichadasTable extends Fichadas
         DriftSqlType.string,
         data['${effectivePrefix}observacion'],
       ),
+      origen: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}origen'],
+      )!,
       deletedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}deleted_at'],
@@ -479,6 +500,10 @@ class LocalFichada extends DataClass implements Insertable<LocalFichada> {
   final String? fotoIngresoLocal;
   final String? fotoEgresoLocal;
   final String? observacion;
+
+  /// Cómo se cargó el tramo: `dispositivo` (Fichar), `manual` (cargado a
+  /// mano) o `importado` (xlsx). Ver `OrigenFichada`.
+  final String origen;
   final DateTime? deletedAt;
 
   /// Última modificación local.
@@ -503,6 +528,7 @@ class LocalFichada extends DataClass implements Insertable<LocalFichada> {
     this.fotoIngresoLocal,
     this.fotoEgresoLocal,
     this.observacion,
+    required this.origen,
     this.deletedAt,
     required this.updatedAt,
     required this.revision,
@@ -541,6 +567,7 @@ class LocalFichada extends DataClass implements Insertable<LocalFichada> {
     if (!nullToAbsent || observacion != null) {
       map['observacion'] = Variable<String>(observacion);
     }
+    map['origen'] = Variable<String>(origen);
     if (!nullToAbsent || deletedAt != null) {
       map['deleted_at'] = Variable<DateTime>(deletedAt);
     }
@@ -588,6 +615,7 @@ class LocalFichada extends DataClass implements Insertable<LocalFichada> {
       observacion: observacion == null && nullToAbsent
           ? const Value.absent()
           : Value(observacion),
+      origen: Value(origen),
       deletedAt: deletedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(deletedAt),
@@ -619,6 +647,7 @@ class LocalFichada extends DataClass implements Insertable<LocalFichada> {
       fotoIngresoLocal: serializer.fromJson<String?>(json['fotoIngresoLocal']),
       fotoEgresoLocal: serializer.fromJson<String?>(json['fotoEgresoLocal']),
       observacion: serializer.fromJson<String?>(json['observacion']),
+      origen: serializer.fromJson<String>(json['origen']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       revision: serializer.fromJson<int>(json['revision']),
@@ -645,6 +674,7 @@ class LocalFichada extends DataClass implements Insertable<LocalFichada> {
       'fotoIngresoLocal': serializer.toJson<String?>(fotoIngresoLocal),
       'fotoEgresoLocal': serializer.toJson<String?>(fotoEgresoLocal),
       'observacion': serializer.toJson<String?>(observacion),
+      'origen': serializer.toJson<String>(origen),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'revision': serializer.toJson<int>(revision),
@@ -669,6 +699,7 @@ class LocalFichada extends DataClass implements Insertable<LocalFichada> {
     Value<String?> fotoIngresoLocal = const Value.absent(),
     Value<String?> fotoEgresoLocal = const Value.absent(),
     Value<String?> observacion = const Value.absent(),
+    String? origen,
     Value<DateTime?> deletedAt = const Value.absent(),
     DateTime? updatedAt,
     int? revision,
@@ -700,6 +731,7 @@ class LocalFichada extends DataClass implements Insertable<LocalFichada> {
         ? fotoEgresoLocal.value
         : this.fotoEgresoLocal,
     observacion: observacion.present ? observacion.value : this.observacion,
+    origen: origen ?? this.origen,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     updatedAt: updatedAt ?? this.updatedAt,
     revision: revision ?? this.revision,
@@ -737,6 +769,7 @@ class LocalFichada extends DataClass implements Insertable<LocalFichada> {
       observacion: data.observacion.present
           ? data.observacion.value
           : this.observacion,
+      origen: data.origen.present ? data.origen.value : this.origen,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       revision: data.revision.present ? data.revision.value : this.revision,
@@ -763,6 +796,7 @@ class LocalFichada extends DataClass implements Insertable<LocalFichada> {
           ..write('fotoIngresoLocal: $fotoIngresoLocal, ')
           ..write('fotoEgresoLocal: $fotoEgresoLocal, ')
           ..write('observacion: $observacion, ')
+          ..write('origen: $origen, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('revision: $revision, ')
@@ -787,6 +821,7 @@ class LocalFichada extends DataClass implements Insertable<LocalFichada> {
     fotoIngresoLocal,
     fotoEgresoLocal,
     observacion,
+    origen,
     deletedAt,
     updatedAt,
     revision,
@@ -810,6 +845,7 @@ class LocalFichada extends DataClass implements Insertable<LocalFichada> {
           other.fotoIngresoLocal == this.fotoIngresoLocal &&
           other.fotoEgresoLocal == this.fotoEgresoLocal &&
           other.observacion == this.observacion &&
+          other.origen == this.origen &&
           other.deletedAt == this.deletedAt &&
           other.updatedAt == this.updatedAt &&
           other.revision == this.revision &&
@@ -831,6 +867,7 @@ class FichadasCompanion extends UpdateCompanion<LocalFichada> {
   final Value<String?> fotoIngresoLocal;
   final Value<String?> fotoEgresoLocal;
   final Value<String?> observacion;
+  final Value<String> origen;
   final Value<DateTime?> deletedAt;
   final Value<DateTime> updatedAt;
   final Value<int> revision;
@@ -851,6 +888,7 @@ class FichadasCompanion extends UpdateCompanion<LocalFichada> {
     this.fotoIngresoLocal = const Value.absent(),
     this.fotoEgresoLocal = const Value.absent(),
     this.observacion = const Value.absent(),
+    this.origen = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.revision = const Value.absent(),
@@ -872,6 +910,7 @@ class FichadasCompanion extends UpdateCompanion<LocalFichada> {
     this.fotoIngresoLocal = const Value.absent(),
     this.fotoEgresoLocal = const Value.absent(),
     this.observacion = const Value.absent(),
+    this.origen = const Value.absent(),
     this.deletedAt = const Value.absent(),
     required DateTime updatedAt,
     this.revision = const Value.absent(),
@@ -898,6 +937,7 @@ class FichadasCompanion extends UpdateCompanion<LocalFichada> {
     Expression<String>? fotoIngresoLocal,
     Expression<String>? fotoEgresoLocal,
     Expression<String>? observacion,
+    Expression<String>? origen,
     Expression<DateTime>? deletedAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? revision,
@@ -920,6 +960,7 @@ class FichadasCompanion extends UpdateCompanion<LocalFichada> {
       if (fotoIngresoLocal != null) 'foto_ingreso_local': fotoIngresoLocal,
       if (fotoEgresoLocal != null) 'foto_egreso_local': fotoEgresoLocal,
       if (observacion != null) 'observacion': observacion,
+      if (origen != null) 'origen': origen,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (revision != null) 'revision': revision,
@@ -943,6 +984,7 @@ class FichadasCompanion extends UpdateCompanion<LocalFichada> {
     Value<String?>? fotoIngresoLocal,
     Value<String?>? fotoEgresoLocal,
     Value<String?>? observacion,
+    Value<String>? origen,
     Value<DateTime?>? deletedAt,
     Value<DateTime>? updatedAt,
     Value<int>? revision,
@@ -964,6 +1006,7 @@ class FichadasCompanion extends UpdateCompanion<LocalFichada> {
       fotoIngresoLocal: fotoIngresoLocal ?? this.fotoIngresoLocal,
       fotoEgresoLocal: fotoEgresoLocal ?? this.fotoEgresoLocal,
       observacion: observacion ?? this.observacion,
+      origen: origen ?? this.origen,
       deletedAt: deletedAt ?? this.deletedAt,
       updatedAt: updatedAt ?? this.updatedAt,
       revision: revision ?? this.revision,
@@ -1015,6 +1058,9 @@ class FichadasCompanion extends UpdateCompanion<LocalFichada> {
     if (observacion.present) {
       map['observacion'] = Variable<String>(observacion.value);
     }
+    if (origen.present) {
+      map['origen'] = Variable<String>(origen.value);
+    }
     if (deletedAt.present) {
       map['deleted_at'] = Variable<DateTime>(deletedAt.value);
     }
@@ -1054,6 +1100,7 @@ class FichadasCompanion extends UpdateCompanion<LocalFichada> {
           ..write('fotoIngresoLocal: $fotoIngresoLocal, ')
           ..write('fotoEgresoLocal: $fotoEgresoLocal, ')
           ..write('observacion: $observacion, ')
+          ..write('origen: $origen, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('revision: $revision, ')
@@ -3771,6 +3818,7 @@ typedef $$FichadasTableCreateCompanionBuilder = FichadasCompanion Function({
   Value<String?> fotoIngresoLocal,
   Value<String?> fotoEgresoLocal,
   Value<String?> observacion,
+  Value<String> origen,
   Value<DateTime?> deletedAt,
   required DateTime updatedAt,
   Value<int> revision,
@@ -3792,6 +3840,7 @@ typedef $$FichadasTableUpdateCompanionBuilder = FichadasCompanion Function({
   Value<String?> fotoIngresoLocal,
   Value<String?> fotoEgresoLocal,
   Value<String?> observacion,
+  Value<String> origen,
   Value<DateTime?> deletedAt,
   Value<DateTime> updatedAt,
   Value<int> revision,
@@ -3871,6 +3920,11 @@ class $$FichadasTableFilterComposer
 
   ColumnFilters<String> get observacion => $composableBuilder(
     column: $table.observacion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get origen => $composableBuilder(
+    column: $table.origen,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3975,6 +4029,11 @@ class $$FichadasTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get origen => $composableBuilder(
+    column: $table.origen,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
     column: $table.deletedAt,
     builder: (column) => ColumnOrderings(column),
@@ -4065,6 +4124,9 @@ class $$FichadasTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get origen =>
+      $composableBuilder(column: $table.origen, builder: (column) => column);
+
   GeneratedColumn<DateTime> get deletedAt =>
       $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 
@@ -4128,6 +4190,7 @@ class $$FichadasTableTableManager
                 Value<String?> fotoIngresoLocal = const Value.absent(),
                 Value<String?> fotoEgresoLocal = const Value.absent(),
                 Value<String?> observacion = const Value.absent(),
+                Value<String> origen = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> revision = const Value.absent(),
@@ -4148,6 +4211,7 @@ class $$FichadasTableTableManager
                 fotoIngresoLocal: fotoIngresoLocal,
                 fotoEgresoLocal: fotoEgresoLocal,
                 observacion: observacion,
+                origen: origen,
                 deletedAt: deletedAt,
                 updatedAt: updatedAt,
                 revision: revision,
@@ -4170,6 +4234,7 @@ class $$FichadasTableTableManager
                 Value<String?> fotoIngresoLocal = const Value.absent(),
                 Value<String?> fotoEgresoLocal = const Value.absent(),
                 Value<String?> observacion = const Value.absent(),
+                Value<String> origen = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
                 required DateTime updatedAt,
                 Value<int> revision = const Value.absent(),
@@ -4190,6 +4255,7 @@ class $$FichadasTableTableManager
                 fotoIngresoLocal: fotoIngresoLocal,
                 fotoEgresoLocal: fotoEgresoLocal,
                 observacion: observacion,
+                origen: origen,
                 deletedAt: deletedAt,
                 updatedAt: updatedAt,
                 revision: revision,

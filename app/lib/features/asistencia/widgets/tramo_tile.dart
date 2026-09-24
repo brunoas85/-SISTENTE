@@ -25,6 +25,7 @@ class TramoTile extends StatelessWidget {
     final detalles = <String>[
       if (worked != null) 'Trabajado ${formatMinutes(worked)}',
       if (egreso == null) 'Falta el egreso',
+      if (fichada.esManual) 'Cargado a mano',
       if (fichada.ingresoOriginalMin != null)
         'Ingreso corregido (el dispositivo marcó ${formatClock(fichada.ingresoOriginalMin!)})',
       if (fichada.egresoOriginalMin != null)

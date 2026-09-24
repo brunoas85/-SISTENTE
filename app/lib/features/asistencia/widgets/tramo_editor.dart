@@ -24,6 +24,8 @@ class TramoEditor extends StatefulWidget {
     required this.onCancelar,
     this.tramo,
     this.dense = false,
+    this.inicioControl,
+    this.reloj = DateTime.now,
   });
 
   final CalendarDate fecha;
@@ -40,6 +42,12 @@ class TramoEditor extends StatefulWidget {
 
   /// Campos compactos (tabla de PC).
   final bool dense;
+
+  /// Primera fichada: no se agregan tramos anteriores.
+  final CalendarDate? inicioControl;
+
+  /// Hora actual (hoy no se carga una hora posterior).
+  final DateTime Function() reloj;
 
   @override
   State<TramoEditor> createState() => _TramoEditorState();
@@ -130,6 +138,8 @@ class _TramoEditorState extends State<TramoEditor> {
       egresoMin: h.egreso,
       otrosDelDia: widget.otrosDelDia,
       feriados: widget.feriados,
+      inicioControl: widget.inicioControl,
+      ahoraMin: minutesOfDay(widget.reloj()),
     );
   }
 

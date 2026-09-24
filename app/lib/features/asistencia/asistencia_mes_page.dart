@@ -72,6 +72,26 @@ List<String> motivosRevision(DiaAsistencia d) => [
     'Día sin fichada cubierto solo en parte por un usufructo.',
 ];
 
+/// Qué pasa si se borra la primera fichada (para la confirmación).
+String textoCambioInicio(CambioInicioControl c) {
+  final movs = c.movimientosQueDejanDeComputar;
+  final nuevo = c.nuevo;
+  final inicio = nuevo == null
+      ? 'No quedan fichadas: el control vuelve a cero y empieza con la '
+            'próxima. Ningún movimiento del banco computa hasta entonces.'
+      : 'Es la primera fichada: el inicio del control pasa del '
+            '${formatDate(c.anterior)} al ${formatDate(nuevo)}. Los días sin '
+            'fichada de ese período dejan de ser faltantes.';
+  final detalle = switch (movs) {
+    0 => '',
+    1 when nuevo == null => ' 1 movimiento del banco deja de computar.',
+    1 => ' 1 movimiento del banco de ese período deja de computar.',
+    _ when nuevo == null => ' $movs movimientos del banco dejan de computar.',
+    _ => ' $movs movimientos del banco de ese período dejan de computar.',
+  };
+  return '$inicio$detalle Quedan registrados para revisar.';
+}
+
 String _minOGuion(int? m) => m == null || m == 0 ? '—' : formatMinutes(m);
 
 /// Qué se está editando en línea: un tramo ([tramoId]) o uno nuevo en
@@ -176,13 +196,28 @@ class _AsistenciaMesPageState extends ConsumerState<AsistenciaMesPage> {
   Future<void> _borrar(LocalFichada t) async {
     final fecha = parseIsoDate(t.fecha);
     final tramo = describirTramo(t.ingresoMin, t.egresoMin);
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return;
+    final repo = ref.read(fichadasRepositoryProvider);
+    final CambioInicioControl? cambio;
+    try {
+      cambio = await repo.impactoBorrado(userId: userId, id: t.id);
+    } on FichadaInvalidaException catch (e) {
+      if (mounted) _avisar(e.message);
+      return;
+    }
+    if (!mounted) return;
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Borrar tramo'),
+        title: Text(
+          cambio == null ? 'Borrar tramo' : 'Borrar la primera fichada',
+        ),
         content: Text(
           '¿Querés borrar el tramo $tramo del ${formatDate(fecha)}? '
-          'Deja de computar en el día y en el banco.',
+          'Deja de computar en el día y en el banco.'
+          '${cambio == null ? '' : '\n\n${textoCambioInicio(cambio)}'}',
+          key: const Key('texto-borrar-tramo'),
         ),
         actions: [
           TextButton(
@@ -198,12 +233,12 @@ class _AsistenciaMesPageState extends ConsumerState<AsistenciaMesPage> {
       ),
     );
     if (ok != true || !mounted) return;
-    final userId = ref.read(currentUserIdProvider);
-    if (userId == null) return;
     try {
-      await ref
-          .read(fichadasRepositoryProvider)
-          .borrarTramo(userId: userId, id: t.id);
+      await repo.borrarTramo(
+        userId: userId,
+        id: t.id,
+        confirmarCambioInicio: cambio != null,
+      );
       unawaited(ref.read(syncControllerProvider.notifier).syncNow());
       if (!mounted) return;
       if (_edicion?.tramoId == t.id) setState(() => _edicion = null);
@@ -307,6 +342,7 @@ class _AsistenciaMesPageState extends ConsumerState<AsistenciaMesPage> {
       onCancelar: () => _editar(null),
       onGuardar: (t, i, e) => _guardar(d.fecha, t, i, e),
       onBorrar: _borrar,
+      reloj: ref.read(clockProvider),
     );
 
     final encabezado = _SelectorMes(
@@ -339,6 +375,8 @@ class _AsistenciaMesPageState extends ConsumerState<AsistenciaMesPage> {
                 'No hay días faltantes en ${_periodo(m.anio, m.mes)}.',
               FiltroAsistencia.editados =>
                 'No hay tramos editados en ${_periodo(m.anio, m.mes)}.',
+              FiltroAsistencia.manuales =>
+                'No hay tramos cargados a mano en ${_periodo(m.anio, m.mes)}.',
             },
             key: const Key('sin-dias'),
             textAlign: TextAlign.center,
@@ -362,8 +400,8 @@ class _AsistenciaMesPageState extends ConsumerState<AsistenciaMesPage> {
           icono: Icons.flag_outlined,
           texto:
               'El control empezó el ${formatDate(m.inicioControl!)}. Los '
-              'días anteriores no son faltantes. Si agregás un tramo antes, '
-              'el control pasa a empezar ese día.',
+              'días anteriores no son faltantes y no se les agregan '
+              'tramos.',
         ),
     ];
 
@@ -1099,10 +1137,12 @@ class _TramosDelDia extends StatelessWidget {
     required this.onCancelar,
     required this.onGuardar,
     required this.onBorrar,
+    required this.reloj,
   });
 
   final DiaAsistencia dia;
   final List<Holiday> feriados;
+  final DateTime Function() reloj;
 
   /// Edición en curso en este día, o `null`.
   final _Edicion? edicion;
@@ -1126,6 +1166,8 @@ class _TramosDelDia extends StatelessWidget {
         otrosDelDia: dia.tramos,
         feriados: feriados,
         dense: dense,
+        inicioControl: dia.inicioControl,
+        reloj: reloj,
         onGuardar: (i, eg) => onGuardar(t, i, eg),
         onCancelar: onCancelar,
       ),
@@ -1235,6 +1277,25 @@ class _TramoLinea extends StatelessWidget {
                   size: iconSize,
                   color: color ?? theme.colorScheme.secondary,
                 ),
+              ),
+            ),
+          ),
+        if (t.origenTipo != OrigenFichada.dispositivo)
+          Tooltip(
+            message: t.esManual
+                ? 'Cargado a mano (sin hora del dispositivo)'
+                : 'Importado de la planilla',
+            child: Container(
+              key: Key('origen-${t.id}'),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              decoration: BoxDecoration(
+                border: Border.all(color: color ?? theme.colorScheme.outline),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                t.esManual ? 'manual' : 'importado',
+                style: theme.textTheme.labelSmall?.copyWith(color: color),
               ),
             ),
           ),

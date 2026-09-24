@@ -21,7 +21,8 @@ enum FiltroAsistencia {
   /// Ver [DiaAsistencia.paraRevisar].
   revisar('Para revisar'),
   faltantes('Faltantes'),
-  editados('Con tramos editados');
+  editados('Con tramos editados'),
+  manuales('Cargados a mano');
 
   const FiltroAsistencia(this.label);
   final String label;
@@ -35,6 +36,7 @@ class DiaAsistencia {
     required this.tramos,
     required this.hoy,
     this.noLaborable,
+    this.inicioControl,
   });
 
   /// Cálculo del día (estado único, minutos).
@@ -48,6 +50,9 @@ class DiaAsistencia {
   /// Por qué no es laborable (fin de semana o feriado, con su nombre).
   final NonWorkingDay? noLaborable;
 
+  /// Primera fichada (inicio del control), o `null` si no hay ninguna.
+  final CalendarDate? inicioControl;
+
   CalendarDate get fecha => dia.date;
   DayStatus get estado => dia.status;
   bool get esHoy => fecha == hoy;
@@ -60,15 +65,21 @@ class DiaAsistencia {
 
   bool get faltante => estado == DayStatus.missing;
   bool get tieneEditados => tramos.any((t) => t.editado);
+  bool get tieneManuales => tramos.any((t) => t.esManual);
 
-  /// Se puede agregar un tramo a mano: día pasado y laborable.
-  bool get admiteAlta => fecha.isBefore(hoy) && noLaborable == null;
+  /// Se puede agregar un tramo a mano: día pasado y laborable, desde el
+  /// inicio del control (decisión de Bruno del 24/09).
+  bool get admiteAlta =>
+      fecha.isBefore(hoy) &&
+      noLaborable == null &&
+      !(inicioControl != null && fecha.isBefore(inicioControl!));
 
   bool cumple(FiltroAsistencia filtro) => switch (filtro) {
     FiltroAsistencia.todos => true,
     FiltroAsistencia.revisar => paraRevisar,
     FiltroAsistencia.faltantes => faltante,
     FiltroAsistencia.editados => tieneEditados,
+    FiltroAsistencia.manuales => tieneManuales,
   };
 }
 
@@ -156,6 +167,7 @@ AsistenciaMes buildAsistenciaMes({
     movements: [for (final m in movimientos) m.toBankMovement()],
     bankUntil: hoy,
   );
+  final inicio = controlStartFrom(records);
   final porFecha = <CalendarDate, List<LocalFichada>>{};
   for (final f in fichadas) {
     final d = f.date;
@@ -167,7 +179,7 @@ AsistenciaMes buildAsistenciaMes({
     hoy: hoy,
     resumen: resumen,
     feriados: feriados,
-    inicioControl: controlStartFrom(records),
+    inicioControl: inicio,
     dias: [
       for (final d in resumen.days)
         DiaAsistencia(
@@ -176,6 +188,7 @@ AsistenciaMes buildAsistenciaMes({
           tramos: [...?porFecha[d.date]]
             ..sort((a, b) => a.ingresoMin.compareTo(b.ingresoMin)),
           noLaborable: nonWorkingDayFor(d.date, feriados),
+          inicioControl: inicio,
         ),
     ],
   );

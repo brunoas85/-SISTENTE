@@ -296,6 +296,7 @@ class SyncService {
         fotoIngresoPath: ingresoPath,
         fotoEgresoPath: egresoPath,
         observacion: base.observacion,
+        origen: base.origen,
         deletedAt: base.deletedAt,
       ),
     );

@@ -14,6 +14,30 @@ enum SyncStatus {
   error,
 }
 
+/// Origen de un tramo (columna `fichadas.origen`).
+enum OrigenFichada {
+  /// Fichado con el botón Fichar (hora propuesta por el dispositivo).
+  dispositivo,
+
+  /// Cargado a mano: agregado desde la vista mensual o cerrado con la hora a
+  /// mano.
+  manual,
+
+  /// Traído de la planilla xlsx.
+  importado;
+
+  /// Valor en la base (el nombre).
+  String get dbValue => name;
+
+  /// Origen con ese valor, o [dispositivo] si no se conoce.
+  static OrigenFichada fromDbValue(String? value) {
+    for (final o in values) {
+      if (o.name == value) return o;
+    }
+    return dispositivo;
+  }
+}
+
 /// Espejo local de `public.fichadas` más las columnas de sincronización.
 ///
 /// Las horas son minutos desde las 00:00 y la fecha es `yyyy-MM-dd`, igual
@@ -39,6 +63,10 @@ class Fichadas extends Table {
   TextColumn get fotoEgresoLocal => text().nullable()();
 
   TextColumn get observacion => text().nullable()();
+
+  /// Cómo se cargó el tramo: `dispositivo` (Fichar), `manual` (cargado a
+  /// mano) o `importado` (xlsx). Ver `OrigenFichada`.
+  TextColumn get origen => text().withDefault(const Constant('dispositivo'))();
   DateTimeColumn get deletedAt => dateTime().nullable()();
 
   /// Última modificación local.
@@ -187,7 +215,7 @@ class AppDatabase extends _$AppDatabase {
   static const holidaysPulledAtKey = 'feriados_pulled_at';
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -214,6 +242,11 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(tiposDocumentoGde);
         await m.createTable(bancoMovimientos);
         await _createBancoIndexes();
+      }
+      if (from < 4) {
+        // Las filas existentes quedan como 'dispositivo' (igual que en el
+        // servidor).
+        await m.addColumn(fichadas, fichadas.origen);
       }
     },
   );

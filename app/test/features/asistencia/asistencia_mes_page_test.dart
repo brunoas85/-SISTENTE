@@ -17,7 +17,7 @@ import '../../support/test_app.dart';
 // Septiembre armado:
 // - días hábiles del 01 al 23 con jornada exacta 08:00–16:00, salvo:
 // - 10/09 sin fichada → faltante;
-// - 11/09 dos tramos superpuestos → conflicto;
+// - 11/09 dos tramos superpuestos → conflicto (el segundo, cargado a mano);
 // - 21/09 ingreso corregido (el dispositivo marcó 07:50);
 // - 22/09 tramo abierto desde las 08:00;
 // - 23/09 con foto de ingreso guardada en el dispositivo.
@@ -39,6 +39,7 @@ void main() {
     int? ingresoOriginal,
     String? fotoLocal,
     String? fotoPath,
+    String origen = 'dispositivo',
   }) => deps.db
       .into(deps.db.fichadas)
       .insert(
@@ -52,6 +53,7 @@ void main() {
           editado: Value(ingresoOriginal != null),
           fotoIngresoLocal: Value(fotoLocal),
           fotoIngresoPath: Value(fotoPath),
+          origen: Value(origen),
           updatedAt: DateTime(2026, 9, 23),
           revision: const Value(1),
           syncStatus: SyncStatus.synced,
@@ -70,7 +72,14 @@ void main() {
         );
     await insertarJornadasExactas(deps.db, habiles);
     await insertar(deps, 'c1', '2026-09-11', 480, egreso: 720);
-    await insertar(deps, 'c2', '2026-09-11', 660, egreso: 960);
+    await insertar(
+      deps,
+      'c2',
+      '2026-09-11',
+      660,
+      egreso: 960,
+      origen: 'manual',
+    );
     await insertar(
       deps,
       'ed',
@@ -337,6 +346,141 @@ void main() {
         deps.db.fichadas,
       )..where((f) => f.id.equals('ab'))).getSingle();
       expect(row.deletedAt, isNotNull);
+
+      await disposeTestApp(tester, deps);
+    });
+
+    testWidgets('marca "manual" y filtro "Cargados a mano"', (tester) async {
+      final deps = await septiembre();
+      await pump(tester, deps);
+
+      expect(find.byKey(const Key('origen-c2')), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('origen-c2')),
+          matching: find.text('manual'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('origen-c1')), findsNothing);
+      expect(find.byKey(const Key('origen-ed')), findsNothing);
+
+      await tocar(tester, 'filtro-manuales');
+      await tester.pumpAndSettle();
+      expect(fila('2026-09-11'), findsOneWidget);
+      expect(fila('2026-09-21'), findsNothing);
+      expect(fila('2026-09-10'), findsNothing);
+
+      await disposeTestApp(tester, deps);
+    });
+
+    testWidgets('un tramo agregado queda como manual', (tester) async {
+      final deps = await septiembre();
+      await pump(tester, deps);
+
+      await tocar(tester, 'agregar-2026-09-10');
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('editor-ingreso')), '8:00');
+      await tester.enterText(find.byKey(const Key('editor-egreso')), '16:00');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      expect(texto(tester, 'estado-2026-09-10'), 'Trabajado');
+      final row = await (deps.db.select(
+        deps.db.fichadas,
+      )..where((f) => f.fecha.equals('2026-09-10'))).getSingle();
+      expect(row.origen, 'manual');
+      expect(row.editado, isFalse);
+      expect(find.byKey(Key('origen-${row.id}')), findsOneWidget);
+
+      await disposeTestApp(tester, deps);
+    });
+
+    testWidgets('antes del inicio del control no se agregan tramos', (
+      tester,
+    ) async {
+      final deps = await septiembre();
+      await pump(tester, deps);
+
+      await tocar(tester, 'mes-anterior');
+      await tester.pumpAndSettle();
+      expect(texto(tester, 'mes-titulo'), 'Agosto 2026');
+      expect(find.byKey(const Key('agregar-2026-08-31')), findsNothing);
+      await tocar(tester, 'agregar-tramo');
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'En agosto 2026 no hay días pasados laborables para agregar '
+          'tramos.',
+        ),
+        findsOneWidget,
+      );
+
+      await disposeTestApp(tester, deps);
+    });
+
+    testWidgets('borrar la primera fichada avisa que corre el inicio', (
+      tester,
+    ) async {
+      final deps = await septiembre();
+      await deps.db
+          .into(deps.db.bancoMovimientos)
+          .insert(
+            BancoMovimientosCompanion.insert(
+              id: 'acumulacion-ficticia',
+              userId: fakeUserId,
+              tipo: 'acumulacion',
+              fecha: '2026-09-01',
+              minutos: 60,
+              updatedAt: DateTime(2026, 9, 20),
+              syncStatus: SyncStatus.synced,
+            ),
+          );
+      await pump(tester, deps);
+
+      await tocar(tester, 'borrar-jornada-2026-09-01');
+      await tester.pumpAndSettle();
+      expect(find.text('Borrar la primera fichada'), findsOneWidget);
+      expect(
+        texto(tester, 'texto-borrar-tramo'),
+        contains(
+          'el inicio del control pasa del 01/09/2026 al 02/09/2026. Los días '
+          'sin fichada de ese período dejan de ser faltantes. 1 movimiento '
+          'del banco de ese período deja de computar.',
+        ),
+      );
+      await tocar(tester, 'confirmar-borrar-tramo');
+      await tester.pumpAndSettle();
+
+      expect(texto(tester, 'estado-2026-09-01'), 'Antes del control');
+      expect(find.byKey(const Key('agregar-2026-09-01')), findsNothing);
+
+      await disposeTestApp(tester, deps);
+    });
+
+    testWidgets('hoy no se carga una hora posterior a la actual', (
+      tester,
+    ) async {
+      final deps = await septiembre();
+      // Hoy (24/09, 08:02) con un tramo abierto desde las 08:00.
+      await insertar(deps, 'hoy', '2026-09-24', 480);
+      await pump(tester, deps);
+
+      await tocar(tester, 'cerrar-hoy');
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('editor-egreso')), '12:00');
+      await tester.pump();
+      expect(
+        texto(tester, 'editor-mensaje'),
+        'Son las 08:02: el egreso (12:00) no puede ser posterior a la hora '
+        'actual.',
+      );
+      expect(
+        tester
+            .widget<IconButton>(find.byKey(const Key('editor-guardar')))
+            .onPressed,
+        isNull,
+      );
 
       await disposeTestApp(tester, deps);
     });

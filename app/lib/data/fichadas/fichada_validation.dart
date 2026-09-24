@@ -84,7 +84,10 @@ enum EdicionTramo {
 ///   siempre con egreso (un tramo abierto de un día pasado bloquearía las
 ///   fichadas siguientes);
 /// - no se agrega ni se cambian horas en un día no laborable. Cerrar un
-///   tramo abierto se permite siempre, igual que al fichar.
+///   tramo abierto se permite siempre, igual que al fichar;
+/// - no se agrega un tramo antes del [inicioControl] (la primera fichada):
+///   correría el inicio y los días del medio pasarían a ser faltantes;
+/// - hoy, ninguna hora posterior a [ahoraMin] (ver [validarHoraNoFutura]).
 ///
 /// La usan el repositorio (autoridad) y la UI (para avisar antes de guardar).
 String? validarTramoManual({
@@ -96,6 +99,8 @@ String? validarTramoManual({
   String? id,
   required Iterable<LocalFichada> otrosDelDia,
   required Iterable<Holiday> feriados,
+  CalendarDate? inicioControl,
+  int? ahoraMin,
 }) {
   if (ingresoMin < 0 || ingresoMin > 1439) {
     return 'La hora de ingreso no es válida.';
@@ -109,6 +114,22 @@ String? validarTramoManual({
   }
   if (accion == EdicionTramo.alta && !fecha.isBefore(hoy)) {
     return 'Los tramos de hoy se cargan desde Fichar.';
+  }
+  if (accion == EdicionTramo.alta &&
+      inicioControl != null &&
+      fecha.isBefore(inicioControl)) {
+    return 'El control empezó el ${formatDate(inicioControl)} (primera '
+        'fichada). No se agregan tramos anteriores.';
+  }
+  if (ahoraMin != null) {
+    final futura = validarHoraNoFutura(
+      fecha: fecha,
+      hoy: hoy,
+      ahoraMin: ahoraMin,
+      ingresoMin: ingresoMin,
+      egresoMin: egresoMin,
+    );
+    if (futura != null) return futura;
   }
   if ((accion == EdicionTramo.alta || accion == EdicionTramo.cierre) &&
       egresoMin == null) {
@@ -128,6 +149,29 @@ String? validarTramoManual({
     id: id,
     otrosDelDia: otrosDelDia,
   );
+}
+
+/// Hoy no se carga una hora posterior a la actual ([ahoraMin], minutos
+/// desde las 00:00 del dispositivo), ni en el ingreso ni en el egreso.
+/// Devuelve el motivo, o `null`. Los días anteriores no tienen tope.
+String? validarHoraNoFutura({
+  required CalendarDate fecha,
+  required CalendarDate hoy,
+  required int ahoraMin,
+  required int ingresoMin,
+  int? egresoMin,
+}) {
+  if (fecha != hoy) return null;
+  final ahora = formatClock(ahoraMin);
+  if (ingresoMin > ahoraMin) {
+    return 'Son las $ahora: el ingreso (${formatClock(ingresoMin)}) no puede '
+        'ser posterior a la hora actual.';
+  }
+  if (egresoMin != null && egresoMin > ahoraMin) {
+    return 'Son las $ahora: el egreso (${formatClock(egresoMin)}) no puede '
+        'ser posterior a la hora actual.';
+  }
+  return null;
 }
 
 /// Interpreta una hora del día escrita a mano: `8:05`, `08:05`, `0805` o

@@ -18,7 +18,7 @@ void main() {
     repo = FichadasRepository(
       db,
       photos,
-      clock: steppingClock(DateTime(2026, 9, 24, 8)),
+      clock: steppingClock(DateTime(2026, 9, 24, 23)),
       newId: sequentialIds(),
     );
   });

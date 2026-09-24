@@ -184,6 +184,11 @@ supabase gen types dart ...     # tras cambiar el esquema
     más de lo que hay de saldo.
   - No hay licencias fuera del banco: lo único que cubre un día es un usufructo.
   - No hay turnos que crucen la medianoche.
+  - No se agregan tramos con fecha anterior al inicio del control, ni horas
+    posteriores a la hora actual en el día de hoy.
+  - Cada tramo guarda su `origen`: `dispositivo` (Fichar), `manual` (cargado a
+    mano) o `importado` (xlsx). Los manuales se ven marcados.
+  - Un tramo abierto de un día pasado queda para revisar.
   - El día de hoy no genera deuda ni cuenta como faltante hasta que termina.
   - Los créditos de los cursos son enteros.
   - Ante un conflicto de sincronización gana el último que sincroniza.

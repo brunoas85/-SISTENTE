@@ -20,7 +20,7 @@ void main() {
     repo = FichadasRepository(
       db,
       InMemoryPhotoStore(),
-      clock: steppingClock(DateTime(2026, 9, 24, 8)),
+      clock: steppingClock(DateTime(2026, 9, 24, 23)),
       newId: sequentialIds(),
     );
     await db
@@ -326,6 +326,7 @@ void main() {
 
   group('borrarTramo', () {
     test('borrado lógico: pendiente de subir y fuera de la lista', () async {
+      await insertar('2026-09-01', 480, 960); // inicio del control
       final f = await insertar('2026-09-21', 480, 960);
       await repo.borrarTramo(userId: fakeUserId, id: f.id);
 
@@ -333,7 +334,7 @@ void main() {
       expect(row!.deletedAt, isNotNull);
       expect(row.syncStatus, SyncStatus.pending);
       expect(row.revision, f.revision + 1);
-      expect(await repo.watchAll(fakeUserId).first, isEmpty);
+      expect(await repo.watchAll(fakeUserId).first, hasLength(1));
       expect((await repo.unsynced(fakeUserId)).single.id, f.id);
       // El hueco se puede volver a cargar.
       await repo.agregarTramo(
@@ -345,6 +346,7 @@ void main() {
     });
 
     test('no borra dos veces ni tramos de otro usuario', () async {
+      await insertar('2026-09-01', 480, 960);
       final f = await insertar('2026-09-21', 480, 960);
       await expectLater(
         repo.borrarTramo(userId: 'otro-usuario-ficticio', id: f.id),
@@ -355,6 +357,270 @@ void main() {
         repo.borrarTramo(userId: fakeUserId, id: f.id),
         throwsA(isA<FichadaInvalidaException>()),
       );
+    });
+  });
+
+  group('inicio del control', () {
+    Future<void> movimiento(String id, String fecha) => db
+        .into(db.bancoMovimientos)
+        .insert(
+          BancoMovimientosCompanion.insert(
+            id: id,
+            userId: fakeUserId,
+            tipo: 'acumulacion',
+            fecha: fecha,
+            minutos: 60,
+            updatedAt: DateTime(2026, 9, 20),
+            syncStatus: SyncStatus.synced,
+          ),
+        );
+
+    test('no se agrega un tramo anterior a la primera fichada', () async {
+      await insertar('2026-09-14', 480, 960);
+      expect(await repo.inicioControl(fakeUserId), CalendarDate(2026, 9, 14));
+      await expectLater(
+        repo.agregarTramo(
+          userId: fakeUserId,
+          date: CalendarDate(2026, 9, 11),
+          ingresoMin: 480,
+          egresoMin: 960,
+        ),
+        throwsA(
+          isA<FichadaInvalidaException>().having(
+            (e) => e.message,
+            'message',
+            'El control empezó el 14/09/2026 (primera fichada). No se '
+                'agregan tramos anteriores.',
+          ),
+        ),
+      );
+      // El mismo día del inicio sí.
+      await repo.agregarTramo(
+        userId: fakeUserId,
+        date: CalendarDate(2026, 9, 14),
+        ingresoMin: 1000,
+        egresoMin: 1100,
+      );
+    });
+
+    test('sin fichadas, el primer tramo agregado es el inicio', () async {
+      expect(await repo.inicioControl(fakeUserId), isNull);
+      await repo.agregarTramo(
+        userId: fakeUserId,
+        date: CalendarDate(2026, 9, 11),
+        ingresoMin: 480,
+        egresoMin: 960,
+      );
+      expect(await repo.inicioControl(fakeUserId), CalendarDate(2026, 9, 11));
+    });
+
+    test(
+      'borrar la primera fichada pide confirmación y dice qué cambia',
+      () async {
+        final primera = await insertar('2026-09-14', 480, 960);
+        final segunda = await insertar('2026-09-17', 480, 960);
+        await movimiento('m-14', '2026-09-14');
+        await movimiento('m-16', '2026-09-16');
+        await movimiento('m-17', '2026-09-17');
+        await movimiento('m-10', '2026-09-10'); // ya no computaba
+
+        expect(
+          await repo.impactoBorrado(userId: fakeUserId, id: segunda.id),
+          isNull,
+        );
+        final cambio = await repo.impactoBorrado(
+          userId: fakeUserId,
+          id: primera.id,
+        );
+        expect(cambio!.anterior, CalendarDate(2026, 9, 14));
+        expect(cambio.nuevo, CalendarDate(2026, 9, 17));
+        expect(cambio.movimientosQueDejanDeComputar, 2);
+
+        await expectLater(
+          repo.borrarTramo(userId: fakeUserId, id: primera.id),
+          throwsA(isA<CambioInicioControlException>()),
+        );
+        expect((await repo.findById(primera.id))!.deletedAt, isNull);
+
+        await repo.borrarTramo(
+          userId: fakeUserId,
+          id: primera.id,
+          confirmarCambioInicio: true,
+        );
+        expect(await repo.inicioControl(fakeUserId), CalendarDate(2026, 9, 17));
+      },
+    );
+
+    test('si quedan otros tramos ese día, el inicio no cambia', () async {
+      final a = await insertar('2026-09-14', 480, 720);
+      await insertar('2026-09-14', 780, 960);
+      expect(await repo.impactoBorrado(userId: fakeUserId, id: a.id), isNull);
+      await repo.borrarTramo(userId: fakeUserId, id: a.id);
+    });
+
+    test('borrar la única fichada vuelve el control a cero', () async {
+      final f = await insertar('2026-09-14', 480, 960);
+      await movimiento('m-10', '2026-09-10');
+      await movimiento('m-20', '2026-09-20');
+      final cambio = await repo.impactoBorrado(userId: fakeUserId, id: f.id);
+      expect(cambio!.nuevo, isNull);
+      expect(cambio.movimientosQueDejanDeComputar, 1);
+    });
+  });
+
+  group('origen', () {
+    test('Fichar = dispositivo; corregirlo sigue siendo dispositivo', () async {
+      final f = await repo.ficharIngreso(
+        userId: fakeUserId,
+        date: hoy,
+        proposedMin: 480,
+        chosenMin: 480,
+      );
+      expect(f.origen, 'dispositivo');
+      final e = await repo.editarTramo(
+        userId: fakeUserId,
+        id: f.id,
+        ingresoMin: 470,
+      );
+      expect(e.origenTipo, OrigenFichada.dispositivo);
+      expect(e.editado, isTrue);
+    });
+
+    test('agregar a mano = manual', () async {
+      final f = await repo.agregarTramo(
+        userId: fakeUserId,
+        date: lunes21,
+        ingresoMin: 480,
+        egresoMin: 960,
+      );
+      expect(f.origen, 'manual');
+      expect(f.esManual, isTrue);
+    });
+
+    test(
+      'cerrar con la hora a mano = manual; con la del dispositivo no',
+      () async {
+        final anterior = await insertar('2026-09-21', 480);
+        final cerrado = await repo.ficharEgreso(
+          userId: fakeUserId,
+          fichadaId: anterior.id,
+          proposedMin: null,
+          chosenMin: 960,
+        );
+        expect(cerrado.origen, 'manual');
+
+        final deHoy = await repo.ficharIngreso(
+          userId: fakeUserId,
+          date: hoy,
+          proposedMin: 480,
+          chosenMin: 480,
+        );
+        final egreso = await repo.ficharEgreso(
+          userId: fakeUserId,
+          fichadaId: deHoy.id,
+          proposedMin: 960,
+          chosenMin: 950,
+        );
+        expect(egreso.origen, 'dispositivo');
+        expect(egreso.editado, isTrue);
+      },
+    );
+
+    test('cerrar desde la vista mensual = manual', () async {
+      final f = await insertar('2026-09-21', 480);
+      final e = await repo.editarTramo(
+        userId: fakeUserId,
+        id: f.id,
+        ingresoMin: 480,
+        egresoMin: 960,
+      );
+      expect(e.origen, 'manual');
+    });
+  });
+
+  group('hoy, nada posterior a la hora actual', () {
+    // Reloj fijo: hoy a las 10:00.
+    late FichadasRepository alas10;
+    setUp(() {
+      alas10 = FichadasRepository(
+        db,
+        InMemoryPhotoStore(),
+        clock: () => DateTime(2026, 9, 24, 10),
+        newId: sequentialIds(),
+      );
+    });
+
+    test('ingreso posterior a la hora actual', () async {
+      await expectLater(
+        alas10.ficharIngreso(
+          userId: fakeUserId,
+          date: hoy,
+          proposedMin: 600,
+          chosenMin: 601,
+        ),
+        throwsA(
+          isA<FichadaInvalidaException>().having(
+            (e) => e.message,
+            'message',
+            'Son las 10:00: el ingreso (10:01) no puede ser posterior a la '
+                'hora actual.',
+          ),
+        ),
+      );
+      final f = await alas10.ficharIngreso(
+        userId: fakeUserId,
+        date: hoy,
+        proposedMin: 600,
+        chosenMin: 600,
+      );
+      expect(f.ingresoMin, 600);
+    });
+
+    test(
+      'egreso posterior a la hora actual (Fichar y vista mensual)',
+      () async {
+        final f = await insertar('2026-09-24', 480);
+        await expectLater(
+          alas10.ficharEgreso(
+            userId: fakeUserId,
+            fichadaId: f.id,
+            proposedMin: 600,
+            chosenMin: 660,
+          ),
+          throwsA(isA<FichadaInvalidaException>()),
+        );
+        await expectLater(
+          alas10.editarTramo(
+            userId: fakeUserId,
+            id: f.id,
+            ingresoMin: 480,
+            egresoMin: 660,
+          ),
+          throwsA(isA<FichadaInvalidaException>()),
+        );
+        await expectLater(
+          alas10.editarTramo(userId: fakeUserId, id: f.id, ingresoMin: 610),
+          throwsA(isA<FichadaInvalidaException>()),
+        );
+        final e = await alas10.editarTramo(
+          userId: fakeUserId,
+          id: f.id,
+          ingresoMin: 480,
+          egresoMin: 600,
+        );
+        expect(e.egresoMin, 600);
+      },
+    );
+
+    test('los días anteriores no tienen tope', () async {
+      final f = await insertar('2026-09-23', 480);
+      final e = await alas10.ficharEgreso(
+        userId: fakeUserId,
+        fichadaId: f.id,
+        proposedMin: null,
+        chosenMin: 1200,
+      );
+      expect(e.egresoMin, 1200);
     });
   });
 

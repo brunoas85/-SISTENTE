@@ -14,6 +14,7 @@ class RemoteFichada {
     this.fotoIngresoPath,
     this.fotoEgresoPath,
     this.observacion,
+    this.origen = 'dispositivo',
     this.deletedAt,
     this.updatedAt,
   });
@@ -30,6 +31,7 @@ class RemoteFichada {
     fotoIngresoPath: f.fotoIngresoPath,
     fotoEgresoPath: f.fotoEgresoPath,
     observacion: f.observacion,
+    origen: f.origen,
     deletedAt: f.deletedAt,
   );
 
@@ -45,6 +47,7 @@ class RemoteFichada {
     fotoIngresoPath: json['foto_ingreso_path'] as String?,
     fotoEgresoPath: json['foto_egreso_path'] as String?,
     observacion: json['observacion'] as String?,
+    origen: json['origen'] as String? ?? 'dispositivo',
     deletedAt: _parseTs(json['deleted_at']),
     updatedAt: _parseTs(json['updated_at']),
   );
@@ -62,6 +65,9 @@ class RemoteFichada {
   final String? fotoIngresoPath;
   final String? fotoEgresoPath;
   final String? observacion;
+
+  /// `dispositivo`, `manual` o `importado` (ver `OrigenFichada`).
+  final String origen;
   final DateTime? deletedAt;
 
   /// Lo pone el trigger del servidor; no se envía.
@@ -80,6 +86,7 @@ class RemoteFichada {
     'foto_ingreso_path': fotoIngresoPath,
     'foto_egreso_path': fotoEgresoPath,
     'observacion': observacion,
+    'origen': origen,
     'deleted_at': deletedAt?.toUtc().toIso8601String(),
   };
 

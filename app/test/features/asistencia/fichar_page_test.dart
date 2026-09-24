@@ -1,5 +1,8 @@
 import 'package:asistente/data/local/app_database.dart';
+import 'package:asistente/data/fichadas/fichadas_repository.dart';
+import 'package:asistente/domain/domain.dart';
 import 'package:asistente/features/asistencia/asistencia_providers.dart';
+import 'package:asistente/features/asistencia/confirmar_fichada_page.dart';
 import 'package:asistente/features/asistencia/fichar_page.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
@@ -492,6 +495,42 @@ void main() {
       ),
       findsNothing,
     );
+
+    await disposeTestApp(tester, deps);
+  });
+
+  testWidgets('no confirma una hora posterior a la actual', (tester) async {
+    usePhoneSize(tester);
+    final deps = TestDeps(); // hoy 24/09 a las 08:02
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: (_, _) => null,
+        overrides: deps.overrides,
+        child: testMaterialApp(
+          ConfirmarFichadaPage(
+            draft: FicharDraft(
+              tipo: TipoFichada.ingreso,
+              fecha: CalendarDate(2026, 9, 24),
+              proposedMin: 600, // 10:00
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Son las 08:02: el ingreso (10:00) no puede ser posterior a la hora '
+        'actual.',
+      ),
+      findsOneWidget,
+    );
+    final boton = tester.widget<ButtonStyleButton>(
+      find.byKey(const Key('confirmar-fichada')),
+    );
+    expect(boton.onPressed, isNull);
+    expect(await deps.db.select(deps.db.fichadas).get(), isEmpty);
 
     await disposeTestApp(tester, deps);
   });

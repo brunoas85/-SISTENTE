@@ -25,6 +25,37 @@ class FichadaInvalidaException implements Exception {
   String toString() => message;
 }
 
+/// Cambio del inicio del control al borrar la primera fichada.
+class CambioInicioControl {
+  const CambioInicioControl({
+    required this.anterior,
+    required this.nuevo,
+    required this.movimientosQueDejanDeComputar,
+  });
+
+  /// Inicio actual (la primera fichada).
+  final CalendarDate anterior;
+
+  /// Nuevo inicio, o `null` si no queda ninguna fichada (el control vuelve a
+  /// cero y ningún movimiento computa).
+  final CalendarDate? nuevo;
+
+  /// Movimientos del banco activos entre [anterior] y [nuevo] (todos desde
+  /// [anterior] si [nuevo] es `null`): dejarían de computar.
+  final int movimientosQueDejanDeComputar;
+}
+
+/// Borrar el tramo correría el inicio del control: hay que confirmarlo.
+class CambioInicioControlException extends FichadaInvalidaException {
+  CambioInicioControlException(this.cambio)
+    : super(
+        'Es la primera fichada: si se borra, el inicio del control cambia. '
+        'Hay que confirmarlo.',
+      );
+
+  final CambioInicioControl cambio;
+}
+
 extension LocalFichadaX on LocalFichada {
   CalendarDate get date => parseIsoDate(fecha);
 
@@ -32,6 +63,11 @@ extension LocalFichadaX on LocalFichada {
   bool get isOpen => egresoMin == null;
 
   bool get isDeleted => deletedAt != null;
+
+  OrigenFichada get origenTipo => OrigenFichada.fromDbValue(origen);
+
+  /// Cargado a mano (vista mensual o cierre con la hora a mano).
+  bool get esManual => origenTipo == OrigenFichada.manual;
 
   DailyRecord toDailyRecord() => DailyRecord(
     id: id,
@@ -176,13 +212,22 @@ class FichadasRepository {
   }) async {
     _checkMinutes(proposedMin);
     _checkMinutes(chosenMin);
+    final now = _clock();
+    final hoy = CalendarDate.fromDateTime(now);
     final noLaborable = nonWorkingDayFor(date, await _holidaysOn(date));
     if (noLaborable != null) {
       throw FichadaInvalidaException(
-        '${motivoDiaNoLaborable(noLaborable, esHoy: date == CalendarDate.fromDateTime(_clock()))}. '
+        '${motivoDiaNoLaborable(noLaborable, esHoy: date == hoy)}. '
         'No se puede fichar.',
       );
     }
+    final futura = validarHoraNoFutura(
+      fecha: date,
+      hoy: hoy,
+      ahoraMin: minutesOfDay(now),
+      ingresoMin: chosenMin,
+    );
+    if (futura != null) throw FichadaInvalidaException(futura);
     final open = await openRecords(userId);
     if (open.isNotEmpty) {
       final o = open.first;
@@ -218,6 +263,7 @@ class FichadasRepository {
             ingresoOriginalMin: Value(original),
             editado: Value(original != null),
             fotoIngresoLocal: Value(photoRef),
+            origen: Value(OrigenFichada.dispositivo.dbValue),
             updatedAt: _clock(),
             revision: const Value(1),
             syncStatus: SyncStatus.pending,
@@ -235,7 +281,9 @@ class FichadasRepository {
   ///
   /// [proposedMin] es `null` cuando no hay hora del dispositivo que proponer
   /// (cerrar un tramo de un día anterior, con la hora a mano): no se guarda
-  /// hora original. La foto es opcional.
+  /// hora original y el tramo pasa a `origen = manual`. La foto es opcional.
+  ///
+  /// Hoy no se acepta una hora posterior a la actual.
   ///
   /// Cerrar un tramo abierto se permite siempre, aunque hoy no sea laborable
   /// (si no, un tramo abierto bloquearía las fichadas siguientes).
@@ -255,6 +303,15 @@ class FichadasRepository {
     if (!row.isOpen) {
       throw const FichadaInvalidaException('Ese tramo ya tiene egreso.');
     }
+    final now = _clock();
+    final futura = validarHoraNoFutura(
+      fecha: row.date,
+      hoy: CalendarDate.fromDateTime(now),
+      ahoraMin: minutesOfDay(now),
+      ingresoMin: row.ingresoMin,
+      egresoMin: chosenMin,
+    );
+    if (futura != null) throw FichadaInvalidaException(futura);
     final motivo = validarTramo(
       fecha: row.date,
       id: row.id,
@@ -279,6 +336,10 @@ class FichadasRepository {
         editado: Value(row.ingresoOriginalMin != null || original != null),
         fotoEgresoLocal: Value(photoRef),
         fotoEgresoPath: const Value(null),
+        // Cerrar con la hora a mano (sin hora del dispositivo) es carga manual.
+        origen: proposedMin == null
+            ? Value(OrigenFichada.manual.dbValue)
+            : const Value.absent(),
         updatedAt: Value(_clock()),
         revision: Value(row.revision + 1),
         syncStatus: const Value(SyncStatus.pending),
@@ -292,7 +353,21 @@ class FichadasRepository {
   // Carga a mano (vista mensual, PC)
   // ---------------------------------------------------------------------------
 
-  CalendarDate get _hoy => CalendarDate.fromDateTime(_clock());
+  /// Inicio del control: la fecha de la primera fichada activa, o `null`.
+  Future<CalendarDate?> inicioControl(String userId) => _primeraFecha(userId);
+
+  Future<CalendarDate?> _primeraFecha(String userId, {String? sinId}) async {
+    final first = _t.fecha.min();
+    var where = _t.userId.equals(userId) & _t.deletedAt.isNull();
+    if (sinId != null) where = where & _t.id.equals(sinId).not();
+    final row =
+        await (_db.selectOnly(_t)
+              ..addColumns([first])
+              ..where(where))
+            .getSingle();
+    final fecha = row.read(first);
+    return fecha == null ? null : parseIsoDate(fecha);
+  }
 
   Future<LocalFichada> _activa(String userId, String id) async {
     final row = await findById(id);
@@ -304,27 +379,31 @@ class FichadasRepository {
 
   /// Agrega un tramo completo en un día pasado, con las horas a mano.
   ///
-  /// Sin hora del dispositivo no hay hora original: queda `editado = false`
-  /// (el CHECK `fichadas_editado_coherente` exige una hora original para
-  /// marcarlo). Un tramo agregado desde cero se reconoce porque no tiene
-  /// foto; distinguirlo de verdad necesita una columna en el backend.
+  /// Queda `origen = manual`. Sin hora del dispositivo no hay hora
+  /// original, así que `editado = false` (el CHECK
+  /// `fichadas_editado_coherente` exige una hora original para marcarlo).
   ///
-  /// Reglas: ver [validarTramoManual] (solo días pasados y laborables, con
-  /// egreso posterior al ingreso y sin superposición).
+  /// Reglas: ver [validarTramoManual] (solo días pasados y laborables, desde
+  /// el inicio del control, con egreso posterior al ingreso y sin
+  /// superposición). Si todavía no hay ninguna fichada, el tramo agregado
+  /// pasa a ser el inicio del control.
   Future<LocalFichada> agregarTramo({
     required String userId,
     required CalendarDate date,
     required int ingresoMin,
     required int egresoMin,
   }) async {
+    final now = _clock();
     final motivo = validarTramoManual(
       accion: EdicionTramo.alta,
       fecha: date,
-      hoy: _hoy,
+      hoy: CalendarDate.fromDateTime(now),
+      ahoraMin: minutesOfDay(now),
       ingresoMin: ingresoMin,
       egresoMin: egresoMin,
       otrosDelDia: await _dayRecords(userId, toIsoDate(date)),
       feriados: await _holidaysOn(date),
+      inicioControl: await inicioControl(userId),
     );
     if (motivo != null) throw FichadaInvalidaException(motivo);
 
@@ -338,6 +417,7 @@ class FichadasRepository {
             fecha: toIsoDate(date),
             ingresoMin: ingresoMin,
             egresoMin: Value(egresoMin),
+            origen: Value(OrigenFichada.manual.dbValue),
             updatedAt: _clock(),
             revision: const Value(1),
             syncStatus: SyncStatus.pending,
@@ -353,7 +433,9 @@ class FichadasRepository {
   /// que tenía antes de la primera corrección (la del dispositivo, si la
   /// había) y queda `editado = true`. Si una hora vuelve a su valor
   /// original, se borra la original. Cargar el egreso de un tramo abierto no
-  /// tiene hora original (igual que cerrar un tramo anterior desde Fichar).
+  /// tiene hora original y pasa a `origen = manual` (igual que cerrar un
+  /// tramo anterior desde Fichar). Corregir horas no cambia el origen: un
+  /// tramo `dispositivo` corregido sigue siendo `dispositivo` con `editado`.
   ///
   /// No se puede quitar el egreso. Reglas: ver [validarTramoManual].
   Future<LocalFichada> editarTramo({
@@ -373,10 +455,12 @@ class FichadasRepository {
     final cambiaHoras =
         row.ingresoMin != ingresoMin ||
         (row.egresoMin != null && row.egresoMin != egresoMin);
+    final now = _clock();
     final motivo = validarTramoManual(
       accion: cambiaHoras ? EdicionTramo.edicion : EdicionTramo.cierre,
       fecha: row.date,
-      hoy: _hoy,
+      hoy: CalendarDate.fromDateTime(now),
+      ahoraMin: minutesOfDay(now),
       id: row.id,
       ingresoMin: ingresoMin,
       egresoMin: egresoMin,
@@ -407,6 +491,9 @@ class FichadasRepository {
         egresoOriginalMin: Value(egresoOriginal),
         // Coherente con el CHECK fichadas_editado_coherente.
         editado: Value(ingresoOriginal != null || egresoOriginal != null),
+        origen: egresoAnterior == null && egresoMin != null
+            ? Value(OrigenFichada.manual.dbValue)
+            : const Value.absent(),
         updatedAt: Value(_clock()),
         revision: Value(row.revision + 1),
         syncStatus: const Value(SyncStatus.pending),
@@ -429,10 +516,55 @@ class FichadasRepository {
     return primera == nueva ? null : primera;
   }
 
+  /// Qué pasa con el inicio del control si se borra el tramo [id], o `null`
+  /// si no cambia (no es la primera fichada, o quedan otros tramos ese día).
+  Future<CambioInicioControl?> impactoBorrado({
+    required String userId,
+    required String id,
+  }) async {
+    final row = await _activa(userId, id);
+    final anterior = await inicioControl(userId);
+    if (anterior == null || row.date != anterior) return null;
+    final nuevo = await _primeraFecha(userId, sinId: row.id);
+    if (nuevo == anterior) return null;
+    // Movimientos que computan hoy y dejarían de computar: desde el inicio
+    // actual hasta el nuevo (o todos, si no queda ninguna fichada).
+    final m = _db.bancoMovimientos;
+    final movimientos =
+        await (_db.select(m)..where((x) {
+              var w =
+                  x.userId.equals(userId) &
+                  x.deletedAt.isNull() &
+                  x.fecha.isBiggerOrEqualValue(toIsoDate(anterior));
+              if (nuevo != null) {
+                w = w & x.fecha.isSmallerThanValue(toIsoDate(nuevo));
+              }
+              return w;
+            }))
+            .get();
+    return CambioInicioControl(
+      anterior: anterior,
+      nuevo: nuevo,
+      movimientosQueDejanDeComputar: movimientos.length,
+    );
+  }
+
   /// Borrado lógico del tramo [id]: marca `deleted_at` y lo sube en el sync.
   /// Las fotos quedan (en el dispositivo y en el bucket).
-  Future<void> borrarTramo({required String userId, required String id}) async {
+  ///
+  /// Si es la primera fichada, borrarla corre el inicio del control (ver
+  /// [impactoBorrado]): hace falta [confirmarCambioInicio]; si no, lanza
+  /// [CambioInicioControlException] sin borrar.
+  Future<void> borrarTramo({
+    required String userId,
+    required String id,
+    bool confirmarCambioInicio = false,
+  }) async {
     final row = await _activa(userId, id);
+    if (!confirmarCambioInicio) {
+      final cambio = await impactoBorrado(userId: userId, id: id);
+      if (cambio != null) throw CambioInicioControlException(cambio);
+    }
     await (_db.update(_t)..where((f) => f.id.equals(row.id))).write(
       FichadasCompanion(
         deletedAt: Value(_clock()),
@@ -525,6 +657,7 @@ class FichadasRepository {
                   fotoIngresoPath: Value(r.fotoIngresoPath),
                   fotoEgresoPath: Value(r.fotoEgresoPath),
                   observacion: Value(r.observacion),
+                  origen: Value(r.origen),
                   deletedAt: Value(r.deletedAt),
                   updatedAt: Value(r.updatedAt ?? _clock()),
                   syncStatus: const Value(SyncStatus.synced),

@@ -199,6 +199,7 @@ class FakeFichadasRemote implements FichadasRemote {
         fotoIngresoPath: f.fotoIngresoPath,
         fotoEgresoPath: f.fotoEgresoPath,
         observacion: f.observacion,
+        origen: f.origen,
         deletedAt: f.deletedAt,
         updatedAt: at,
       );

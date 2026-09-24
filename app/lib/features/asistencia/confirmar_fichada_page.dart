@@ -72,6 +72,15 @@ class _ConfirmarFichadaPageState extends ConsumerState<ConfirmarFichadaPage> {
     final chosen = _chosenMin;
     if (chosen == null) return null;
     final open = _draft.tramoAbierto;
+    final now = ref.read(clockProvider)();
+    final futura = validarHoraNoFutura(
+      fecha: _draft.fecha,
+      hoy: CalendarDate.fromDateTime(now),
+      ahoraMin: minutesOfDay(now),
+      ingresoMin: _isIngreso ? chosen : open!.ingresoMin,
+      egresoMin: _isIngreso ? null : chosen,
+    );
+    if (futura != null) return futura;
     return validarTramo(
       fecha: _draft.fecha,
       id: open?.id,
