@@ -43,6 +43,7 @@ class ResumenFichar {
     required this.saldoMesMinutes,
     required this.saldoTotalMinutes,
     required this.abiertasAnteriores,
+    this.todas = const [],
   });
 
   final CalendarDate hoy;
@@ -62,6 +63,9 @@ class ResumenFichar {
   /// Tramos de días anteriores que quedaron sin egreso.
   final List<LocalFichada> abiertasAnteriores;
 
+  /// Todas las fichadas activas.
+  final List<LocalFichada> todas;
+
   /// Tramo abierto de hoy, si hay.
   LocalFichada? get abierto {
     for (final t in tramos) {
@@ -70,9 +74,34 @@ class ResumenFichar {
     return null;
   }
 
-  /// El próximo paso: egreso si hay un tramo abierto, si no ingreso.
-  TipoFichada get proximaFichada =>
-      abierto == null ? TipoFichada.ingreso : TipoFichada.egreso;
+  /// Tramo de un día anterior que hay que cerrar antes de volver a fichar
+  /// (el más viejo), o `null`.
+  LocalFichada? get pendienteDeCierre =>
+      abiertasAnteriores.isEmpty ? null : abiertasAnteriores.first;
+
+  /// El próximo paso del botón principal.
+  AccionFichar get proximaAccion {
+    if (pendienteDeCierre != null) return AccionFichar.cerrarAnterior;
+    return abierto == null ? AccionFichar.ingreso : AccionFichar.egreso;
+  }
+
+  /// Tramos activos de [fecha] (para validar superposiciones).
+  List<LocalFichada> tramosDe(CalendarDate fecha) => [
+    for (final f in todas)
+      if (f.date == fecha) f,
+  ];
+}
+
+/// Qué hace el botón principal de Fichar.
+enum AccionFichar {
+  ingreso,
+  egreso,
+
+  /// Cerrar el tramo que quedó abierto en un día anterior.
+  cerrarAnterior;
+
+  TipoFichada get tipo =>
+      this == ingreso ? TipoFichada.ingreso : TipoFichada.egreso;
 }
 
 /// Arma el [ResumenFichar] con el calculador de `domain/`.
@@ -110,6 +139,7 @@ ResumenFichar buildResumenFichar({
     dia: calculator.calculate(hoy, records: records),
     saldoMesMinutes: mes.bankDeltaMinutes,
     saldoTotalMinutes: total.balanceMinutes,
+    todas: fichadas,
     abiertasAnteriores: [
       for (final f in fichadas)
         if (f.isOpen && f.date.isBefore(hoy)) f,

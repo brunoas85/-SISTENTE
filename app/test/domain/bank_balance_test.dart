@@ -15,38 +15,46 @@ void main() {
       expect(b.days, isEmpty);
     });
 
-    test('Σ a favor + Σ acumulación - Σ deuda no cubierta - Σ usufructo vigente',
-        () {
-      final b = calculateBankBalance(
-        calculator: calc,
-        records: [
-          rec(CalendarDate(2026, 6, 1), hm(7, 0), hm(17, 0)), // +120
-          rec(CalendarDate(2026, 6, 2), hm(8, 0), hm(15, 30)), // deuda 30
-          rec(CalendarDate(2026, 6, 3), hm(8, 0), hm(14, 0)), // deuda 120
-          rec(CalendarDate(2026, 6, 4), hm(8, 0), hm(16, 0)), // 0
-          rec(CalendarDate(2026, 6, 5), hm(8, 0), hm(16, 0)), // 0
-        ],
-        movements: [
-          BankMovement.accumulation(date: CalendarDate(2026, 6, 6), minutes: 240),
-          BankMovement.usufruct(
-            date: CalendarDate(2026, 6, 3),
-            scope: UsufructScope.partial,
-            minutes: 120,
-          ),
-        ],
-      );
-      expect(b.creditMinutes, 120);
-      expect(b.accumulationMinutes, 240);
-      expect(b.uncoveredDebtMinutes, 30);
-      expect(b.activeUsufructMinutes, 120);
-      expect(b.balanceMinutes, 120 + 240 - 30 - 120);
-    });
+    test(
+      'Σ a favor + Σ acumulación - Σ deuda no cubierta - Σ usufructo vigente',
+      () {
+        final b = calculateBankBalance(
+          calculator: calc,
+          records: [
+            rec(CalendarDate(2026, 6, 1), hm(7, 0), hm(17, 0)), // +120
+            rec(CalendarDate(2026, 6, 2), hm(8, 0), hm(15, 30)), // deuda 30
+            rec(CalendarDate(2026, 6, 3), hm(8, 0), hm(14, 0)), // deuda 120
+            rec(CalendarDate(2026, 6, 4), hm(8, 0), hm(16, 0)), // 0
+            rec(CalendarDate(2026, 6, 5), hm(8, 0), hm(16, 0)), // 0
+          ],
+          movements: [
+            BankMovement.accumulation(
+              date: CalendarDate(2026, 6, 6),
+              minutes: 240,
+            ),
+            BankMovement.usufruct(
+              date: CalendarDate(2026, 6, 3),
+              scope: UsufructScope.partial,
+              minutes: 120,
+            ),
+          ],
+        );
+        expect(b.creditMinutes, 120);
+        expect(b.accumulationMinutes, 240);
+        expect(b.uncoveredDebtMinutes, 30);
+        expect(b.activeUsufructMinutes, 120);
+        expect(b.balanceMinutes, 120 + 240 - 30 - 120);
+      },
+    );
 
     test('movimientos perdidos (acumulación o usufructo) no computan', () {
       final b = calculateBankBalance(
         calculator: calc,
         movements: [
-          BankMovement.accumulation(date: CalendarDate(2026, 6, 6), minutes: 480),
+          BankMovement.accumulation(
+            date: CalendarDate(2026, 6, 6),
+            minutes: 480,
+          ),
           BankMovement.accumulation(
             date: CalendarDate(2026, 6, 7),
             minutes: 300,
@@ -81,8 +89,10 @@ void main() {
         from: CalendarDate(2026, 6, 1),
         to: CalendarDate(2026, 6, 2),
       );
-      expect(b.days.map((d) => d.date),
-          [CalendarDate(2026, 6, 1), CalendarDate(2026, 6, 2)]);
+      expect(b.days.map((d) => d.date), [
+        CalendarDate(2026, 6, 1),
+        CalendarDate(2026, 6, 2),
+      ]);
       expect(b.balanceMinutes, 120);
     });
 
@@ -115,10 +125,11 @@ void main() {
           ),
         ],
       );
-      // 02/06 y 03/06 faltantes; del 04/06 al 09/06 no se recorren.
-      expect(b.missingDays.map((d) => d.date.day), [2, 3]);
+      // 02/06 faltante; 03/06 es hoy (no resta todavía); del 04/06 al 09/06
+      // no se recorren.
+      expect(b.missingDays.map((d) => d.date.day), [2]);
       expect(b.days.map((d) => d.date.day), [1, 2, 3, 10]);
-      expect(b.balanceMinutes, -960 - 480);
+      expect(b.balanceMinutes, -480 - 480);
     });
 
     test('los días futuros del rango no restan', () {
@@ -128,8 +139,9 @@ void main() {
         from: CalendarDate(2026, 6, 1),
         to: CalendarDate(2026, 6, 5),
       );
-      expect(b.missingDays.map((d) => d.date.day), [1, 2]);
-      expect(b.balanceMinutes, -960);
+      // 01/06 faltante; 02/06 es hoy; del 03 al 05 son futuros.
+      expect(b.missingDays.map((d) => d.date.day), [1]);
+      expect(b.balanceMinutes, -480);
     });
 
     test('registro abierto no computa pero queda listado', () {

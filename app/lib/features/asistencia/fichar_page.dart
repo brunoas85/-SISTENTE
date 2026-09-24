@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,7 +7,6 @@ import '../../core/auth/auth_providers.dart';
 import '../../core/format/formatters.dart';
 import '../../data/fichadas/fichadas_repository.dart';
 import '../../data/local/app_database.dart';
-import '../../data/photos/photo_capture.dart';
 import '../../data/providers.dart';
 import '../../domain/domain.dart';
 import 'asistencia_providers.dart';
@@ -27,7 +25,6 @@ class FicharPage extends ConsumerStatefulWidget {
 
 class _FicharPageState extends ConsumerState<FicharPage> {
   late final AppLifecycleListener _lifecycle;
-  bool _capturando = false;
 
   @override
   void initState() {
@@ -44,50 +41,53 @@ class _FicharPageState extends ConsumerState<FicharPage> {
     super.dispose();
   }
 
+  /// Abre la confirmación: la hora es la del toque y la foto es opcional.
+  /// Si quedó abierto un tramo de un día anterior, primero se cierra ese.
   Future<void> _fichar(ResumenFichar resumen) async {
-    if (_capturando) return;
     final now = ref.read(clockProvider)();
-    final fecha = CalendarDate.fromDateTime(now);
-    final proposed = minutesOfDay(now);
-    final tipo = resumen.proximaFichada;
+    final accion = resumen.proximaAccion;
     final messenger = ScaffoldMessenger.of(context);
 
-    setState(() => _capturando = true);
-    Uint8List? raw;
-    try {
-      raw = await ref.read(photoCaptureProvider).capture();
-    } on PhotoCaptureException catch (e) {
-      _avisar(messenger, e.message);
-    } catch (e) {
-      _avisar(messenger, 'No se pudo sacar la foto: $e');
-    } finally {
-      if (mounted) setState(() => _capturando = false);
+    final FicharDraft draft;
+    switch (accion) {
+      case AccionFichar.cerrarAnterior:
+        final tramo = resumen.pendienteDeCierre!;
+        draft = FicharDraft(
+          tipo: TipoFichada.egreso,
+          fecha: tramo.date,
+          proposedMin: null, // hora a mano
+          tramoAbierto: tramo,
+          otrosTramos: resumen.tramosDe(tramo.date),
+        );
+      case AccionFichar.ingreso:
+      case AccionFichar.egreso:
+        final fecha = CalendarDate.fromDateTime(now);
+        draft = FicharDraft(
+          tipo: accion.tipo,
+          fecha: fecha,
+          proposedMin: minutesOfDay(now),
+          tramoAbierto: accion == AccionFichar.egreso ? resumen.abierto : null,
+          otrosTramos: resumen.tramosDe(fecha),
+        );
     }
-    if (raw == null || !mounted) return;
 
     final saved = await Navigator.of(context).push<LocalFichada>(
       MaterialPageRoute(
         fullscreenDialog: true,
-        builder: (_) => ConfirmarFichadaPage(
-          draft: FicharDraft(
-            tipo: tipo,
-            fecha: fecha,
-            proposedMin: proposed,
-            rawPhoto: raw!,
-            tramoAbierto: tipo == TipoFichada.egreso ? resumen.abierto : null,
-          ),
-        ),
+        builder: (_) => ConfirmarFichadaPage(draft: draft),
       ),
     );
     if (saved == null || !mounted) return;
-    final hora = tipo == TipoFichada.ingreso
-        ? saved.ingresoMin
-        : saved.egresoMin!;
-    _avisar(
-      messenger,
-      '${tipo == TipoFichada.ingreso ? 'Ingreso' : 'Egreso'} fichado a las '
-      '${formatClock(hora)}. Se sincroniza cuando haya conexión.',
-    );
+    final texto = switch (accion) {
+      AccionFichar.ingreso =>
+        'Ingreso fichado a las ${formatClock(saved.ingresoMin)}.',
+      AccionFichar.egreso =>
+        'Egreso fichado a las ${formatClock(saved.egresoMin!)}.',
+      AccionFichar.cerrarAnterior =>
+        'Tramo del ${formatDate(saved.date)} cerrado a las '
+            '${formatClock(saved.egresoMin!)}.',
+    };
+    _avisar(messenger, '$texto Se sincroniza cuando haya conexión.');
   }
 
   /// Aviso flotante por encima del botón principal (no lo tapa).
@@ -158,7 +158,6 @@ class _FicharPageState extends ConsumerState<FicharPage> {
             child: switch (resumen) {
               AsyncData(:final value) => _Contenido(
                 resumen: value,
-                capturando: _capturando,
                 onFichar: () => _fichar(value),
               ),
               AsyncError(:final error) => _Error(
@@ -179,21 +178,26 @@ class _FicharPageState extends ConsumerState<FicharPage> {
 }
 
 class _Contenido extends StatelessWidget {
-  const _Contenido({
-    required this.resumen,
-    required this.capturando,
-    required this.onFichar,
-  });
+  const _Contenido({required this.resumen, required this.onFichar});
 
   final ResumenFichar resumen;
-  final bool capturando;
   final VoidCallback onFichar;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final abierto = resumen.abierto;
-    final esIngreso = resumen.proximaFichada == TipoFichada.ingreso;
+    final accion = resumen.proximaAccion;
+    final esIngreso = accion == AccionFichar.ingreso;
+    final pendiente = resumen.pendienteDeCierre;
+    final (IconData icono, String etiqueta) = switch (accion) {
+      AccionFichar.ingreso => (Icons.login, 'Fichar ingreso'),
+      AccionFichar.egreso => (Icons.logout, 'Fichar egreso'),
+      AccionFichar.cerrarAnterior => (
+        Icons.history,
+        'Cerrar tramo del ${formatDate(pendiente!.date)}',
+      ),
+    };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -225,12 +229,14 @@ class _Contenido extends StatelessWidget {
                       'Hay tramos superpuestos o con horas inválidas. '
                       'Revisalos desde la PC.',
                 ),
-              if (resumen.abiertasAnteriores.isNotEmpty)
+              if (pendiente != null)
                 _Aviso(
+                  key: const Key('aviso-tramo-anterior'),
                   texto:
-                      'Quedaron tramos sin egreso: '
-                      '${resumen.abiertasAnteriores.map((f) => formatDate(f.date)).toSet().join(', ')}. '
-                      'No computan hasta que se completen.',
+                      'Quedó abierto el tramo del ${formatDate(pendiente.date)} '
+                      'desde las ${formatClock(pendiente.ingresoMin)}. '
+                      'Cerralo con la hora de egreso de ese día antes de '
+                      'volver a fichar.',
                 ),
               const Divider(height: 24),
               if (resumen.tramos.isEmpty)
@@ -265,14 +271,9 @@ class _Contenido extends StatelessWidget {
               foregroundColor: esIngreso ? null : theme.colorScheme.onTertiary,
               textStyle: theme.textTheme.headlineSmall,
             ),
-            onPressed: capturando ? null : onFichar,
-            icon: capturando
-                ? const SizedBox.square(
-                    dimension: 28,
-                    child: CircularProgressIndicator(strokeWidth: 3),
-                  )
-                : Icon(esIngreso ? Icons.login : Icons.logout, size: 32),
-            label: Text(esIngreso ? 'Fichar ingreso' : 'Fichar egreso'),
+            onPressed: onFichar,
+            icon: Icon(icono, size: 32),
+            label: Text(etiqueta, textAlign: TextAlign.center),
           ),
         ),
       ],
@@ -285,8 +286,11 @@ class _Contenido extends StatelessWidget {
     }
     if (r.tramos.isEmpty) return 'Sin fichadas';
     final worked = r.dia.workedMinutes;
-    return worked == null
-        ? 'Sin tramo abierto'
+    if (worked == null) return 'Sin tramo abierto';
+    // La deuda de hoy es provisoria: no resta hasta que termine el día.
+    final faltan = r.dia.provisionalDebtMinutes;
+    return faltan > 0
+        ? 'Trabajado hoy: ${formatMinutes(worked)} · faltan ${formatMinutes(faltan)}'
         : 'Trabajado hoy: ${formatMinutes(worked)}';
   }
 }
@@ -339,7 +343,7 @@ class _SaldoLinea extends StatelessWidget {
 }
 
 class _Aviso extends StatelessWidget {
-  const _Aviso({required this.texto});
+  const _Aviso({super.key, required this.texto});
 
   final String texto;
 

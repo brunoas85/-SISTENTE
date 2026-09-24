@@ -22,9 +22,12 @@ int minutesOfDay(DateTime dateTime) => dateTime.hour * 60 + dateTime.minute;
 DateTime _asDateTime(CalendarDate date) =>
     DateTime(date.year, date.month, date.day);
 
-/// `dd/MM/yyyy`.
+/// `dd/MM/yyyy`. Es numérico, así que no necesita los datos de locale de
+/// `intl` (se puede usar en la capa de datos y en tests sin inicializarlos).
 String formatDate(CalendarDate date) =>
-    DateFormat('dd/MM/yyyy', appLocale).format(_asDateTime(date));
+    '${date.day.toString().padLeft(2, '0')}/'
+    '${date.month.toString().padLeft(2, '0')}/'
+    '${date.year.toString().padLeft(4, '0')}';
 
 /// `jueves 24/09/2026`.
 String formatDateLong(CalendarDate date) =>

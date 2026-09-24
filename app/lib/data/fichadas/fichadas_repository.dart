@@ -5,6 +5,7 @@ import '../../core/format/formatters.dart';
 import '../../domain/domain.dart';
 import '../local/app_database.dart';
 import '../photos/photo_store.dart';
+import 'fichada_validation.dart';
 import 'remote_fichada.dart';
 
 /// Ingreso o egreso de un tramo.
@@ -116,11 +117,40 @@ class FichadasRepository {
   // Fichar
   // ---------------------------------------------------------------------------
 
+  /// Tramos activos sin egreso del usuario (de cualquier fecha), del más
+  /// viejo al más nuevo.
+  Future<List<LocalFichada>> openRecords(String userId) =>
+      (_db.select(_t)
+            ..where(
+              (f) =>
+                  f.userId.equals(userId) &
+                  f.deletedAt.isNull() &
+                  f.egresoMin.isNull(),
+            )
+            ..orderBy([
+              (f) => OrderingTerm.asc(f.fecha),
+              (f) => OrderingTerm.asc(f.ingresoMin),
+            ]))
+          .get();
+
+  Future<List<LocalFichada>> _dayRecords(String userId, String fecha) =>
+      (_db.select(_t)..where(
+            (f) =>
+                f.userId.equals(userId) &
+                f.fecha.equals(fecha) &
+                f.deletedAt.isNull(),
+          ))
+          .get();
+
   /// Abre un tramo nuevo en [date].
   ///
   /// [proposedMin] es la hora del dispositivo y [chosenMin] la que confirmó
   /// el usuario. Si difieren, se guarda la propuesta en
-  /// `ingreso_original_min` y `editado = true`.
+  /// `ingreso_original_min` y `editado = true`. La foto es opcional.
+  ///
+  /// No se puede abrir un tramo si hay otro abierto (de hoy o de un día
+  /// anterior: hay que cerrarlo primero) ni si se superpone con otro tramo
+  /// del mismo día.
   Future<LocalFichada> ficharIngreso({
     required String userId,
     required CalendarDate date,
@@ -130,21 +160,23 @@ class FichadasRepository {
   }) async {
     _checkMinutes(proposedMin);
     _checkMinutes(chosenMin);
-    final open =
-        await (_db.select(_t)..where(
-              (f) =>
-                  f.userId.equals(userId) &
-                  f.fecha.equals(toIsoDate(date)) &
-                  f.deletedAt.isNull() &
-                  f.egresoMin.isNull(),
-            ))
-            .get();
+    final open = await openRecords(userId);
     if (open.isNotEmpty) {
+      final o = open.first;
       throw FichadaInvalidaException(
-        'Ya hay un tramo abierto desde las ${formatClock(open.first.ingresoMin)}. '
-        'Fichá el egreso primero.',
+        o.fecha == toIsoDate(date)
+            ? 'Ya hay un tramo abierto desde las ${formatClock(o.ingresoMin)}. '
+                  'Fichá el egreso primero.'
+            : 'Quedó abierto el tramo del ${formatDate(o.date)} desde las '
+                  '${formatClock(o.ingresoMin)}. Cerralo antes de fichar.',
       );
     }
+    final motivo = validarTramo(
+      fecha: date,
+      ingresoMin: chosenMin,
+      otrosDelDia: await _dayRecords(userId, toIsoDate(date)),
+    );
+    if (motivo != null) throw FichadaInvalidaException(motivo);
 
     final id = _newId();
     final photoRef = photoJpeg == null
@@ -174,16 +206,21 @@ class FichadasRepository {
   /// Cierra el tramo abierto [fichadaId].
   ///
   /// El egreso tiene que ser posterior al ingreso (no hay turnos que crucen
-  /// la medianoche). Si [chosenMin] difiere de [proposedMin], se guarda la
+  /// la medianoche) y el tramo cerrado no puede superponerse con otro del
+  /// mismo día. Si [chosenMin] difiere de [proposedMin], se guarda la
   /// propuesta en `egreso_original_min` y `editado = true`.
+  ///
+  /// [proposedMin] es `null` cuando no hay hora del dispositivo que proponer
+  /// (cerrar un tramo de un día anterior, con la hora a mano): no se guarda
+  /// hora original. La foto es opcional.
   Future<LocalFichada> ficharEgreso({
     required String userId,
     required String fichadaId,
-    required int proposedMin,
+    required int? proposedMin,
     required int chosenMin,
     Uint8List? photoJpeg,
   }) async {
-    _checkMinutes(proposedMin);
+    if (proposedMin != null) _checkMinutes(proposedMin);
     _checkMinutes(chosenMin);
     final row = await findById(fichadaId);
     if (row == null || row.userId != userId || row.isDeleted) {
@@ -192,17 +229,21 @@ class FichadasRepository {
     if (!row.isOpen) {
       throw const FichadaInvalidaException('Ese tramo ya tiene egreso.');
     }
-    if (chosenMin <= row.ingresoMin) {
-      throw FichadaInvalidaException(
-        'El egreso tiene que ser posterior al ingreso '
-        '(${formatClock(row.ingresoMin)}).',
-      );
-    }
+    final motivo = validarTramo(
+      fecha: row.date,
+      id: row.id,
+      ingresoMin: row.ingresoMin,
+      egresoMin: chosenMin,
+      otrosDelDia: await _dayRecords(userId, row.fecha),
+    );
+    if (motivo != null) throw FichadaInvalidaException(motivo);
 
     final photoRef = photoJpeg == null
         ? null
         : await _photos.save(_photoName(row.id, TipoFichada.egreso), photoJpeg);
-    final original = chosenMin != proposedMin ? proposedMin : null;
+    final original = proposedMin != null && chosenMin != proposedMin
+        ? proposedMin
+        : null;
 
     await (_db.update(_t)..where((f) => f.id.equals(row.id))).write(
       FichadasCompanion(

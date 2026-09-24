@@ -196,6 +196,161 @@ void main() {
     );
   });
 
+  group('foto opcional', () {
+    test('se puede fichar ingreso y egreso sin foto', () async {
+      final a = await repo.ficharIngreso(
+        userId: fakeUserId,
+        date: hoy,
+        proposedMin: 480,
+        chosenMin: 480,
+      );
+      expect(a.fotoIngresoLocal, isNull);
+      final b = await repo.ficharEgreso(
+        userId: fakeUserId,
+        fichadaId: a.id,
+        proposedMin: 960,
+        chosenMin: 960,
+      );
+      expect(b.fotoEgresoLocal, isNull);
+      expect(photos.files, isEmpty);
+    });
+  });
+
+  group('tramo abierto de un día anterior', () {
+    final ayer = CalendarDate(2026, 9, 23);
+
+    Future<LocalFichada> abiertoAyer() => repo.ficharIngreso(
+      userId: fakeUserId,
+      date: ayer,
+      proposedMin: 480,
+      chosenMin: 480,
+    );
+
+    test('bloquea fichar un ingreso nuevo hasta cerrarlo', () async {
+      await abiertoAyer();
+      await expectLater(
+        ingreso(proposed: 490),
+        throwsA(
+          isA<FichadaInvalidaException>().having(
+            (e) => e.message,
+            'message',
+            contains('23/09/2026'),
+          ),
+        ),
+      );
+      expect(await repo.watchDay(fakeUserId, hoy).first, isEmpty);
+    });
+
+    test(
+      'se cierra con la hora a mano: sin hora original ni editado',
+      () async {
+        final a = await abiertoAyer();
+        final cerrado = await repo.ficharEgreso(
+          userId: fakeUserId,
+          fichadaId: a.id,
+          proposedMin: null,
+          chosenMin: 970,
+        );
+        expect(cerrado.fecha, '2026-09-23');
+        expect(cerrado.egresoMin, 970);
+        expect(cerrado.egresoOriginalMin, isNull);
+        expect(cerrado.editado, isFalse);
+
+        // Ya se puede fichar hoy.
+        final nuevo = await ingreso();
+        expect(nuevo.fecha, '2026-09-24');
+      },
+    );
+
+    test('openRecords lista los abiertos del más viejo al más nuevo', () async {
+      await abiertoAyer();
+      final open = await repo.openRecords(fakeUserId);
+      expect(open.single.fecha, '2026-09-23');
+    });
+  });
+
+  group('superposición en el mismo día', () {
+    test('bloquea un ingreso dentro de un tramo existente', () async {
+      final a = await ingreso(proposed: 480);
+      await repo.ficharEgreso(
+        userId: fakeUserId,
+        fichadaId: a.id,
+        proposedMin: 720,
+        chosenMin: 720,
+      );
+      await expectLater(
+        ingreso(proposed: 660),
+        throwsA(
+          isA<FichadaInvalidaException>().having(
+            (e) => e.message,
+            'message',
+            'El tramo 11:00–abierto se superpone con el tramo 08:00–12:00.',
+          ),
+        ),
+      );
+      // Justo al terminar el anterior sí se puede.
+      final b = await ingreso(proposed: 720);
+      expect(b.ingresoMin, 720);
+    });
+
+    test(
+      'bloquea un ingreso corregido a una hora anterior a otro tramo',
+      () async {
+        final a = await ingreso(proposed: 780);
+        await repo.ficharEgreso(
+          userId: fakeUserId,
+          fichadaId: a.id,
+          proposedMin: 900,
+          chosenMin: 900,
+        );
+        // Un tramo abierto a las 12:00 llega hasta el fin del día: choca.
+        await expectLater(
+          ingreso(proposed: 960, chosen: 720),
+          throwsA(isA<FichadaInvalidaException>()),
+        );
+      },
+    );
+
+    test('bloquea un egreso que se superpone con otro tramo del día', () async {
+      final a = await ingreso(proposed: 480);
+      // Desde la PC se cargó otro tramo 10:00–11:00 ese día.
+      await repo.applyRemote([
+        RemoteFichada(
+          id: 'desde-la-pc',
+          userId: fakeUserId,
+          fecha: '2026-09-24',
+          ingresoMin: 600,
+          egresoMin: 660,
+          updatedAt: DateTime.utc(2026, 9, 24, 12),
+        ),
+      ]);
+      await expectLater(
+        repo.ficharEgreso(
+          userId: fakeUserId,
+          fichadaId: a.id,
+          proposedMin: 720,
+          chosenMin: 720,
+        ),
+        throwsA(
+          isA<FichadaInvalidaException>().having(
+            (e) => e.message,
+            'message',
+            contains('10:00–11:00'),
+          ),
+        ),
+      );
+      expect((await repo.findById(a.id))!.isOpen, isTrue);
+
+      final ok = await repo.ficharEgreso(
+        userId: fakeUserId,
+        fichadaId: a.id,
+        proposedMin: 720,
+        chosenMin: 600,
+      );
+      expect(ok.egresoMin, 600);
+    });
+  });
+
   group('lectura', () {
     test('contador de no sincronizadas', () async {
       final a = await ingreso();

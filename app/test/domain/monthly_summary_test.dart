@@ -71,7 +71,10 @@ void main() {
           rec(CalendarDate(2026, 6, 2), hm(7, 0), hm(16, 0)),
         ],
         movements: [
-          BankMovement.accumulation(date: CalendarDate(2025, 6, 7), minutes: 600),
+          BankMovement.accumulation(
+            date: CalendarDate(2025, 6, 7),
+            minutes: 600,
+          ),
         ],
       );
       expect(s.creditMinutes, 60);
@@ -112,17 +115,17 @@ void main() {
       expect(st(6), DayStatus.worked);
       expect(st(7), DayStatus.nonWorkingDay);
       expect(st(8), DayStatus.missing);
-      expect(st(10), DayStatus.missing);
+      expect(st(10), DayStatus.today); // hoy: todavía no es faltante
       expect(st(11), DayStatus.future);
       expect(st(15), DayStatus.nonWorkingDay);
 
       expect(s.workedMinutes, 540 + 420 + 180);
       expect(s.creditMinutes, 60 + 180);
-      expect(s.missingDays.map((d) => d.date.day), [4, 8, 9, 10]);
-      expect(s.debtMinutes, 60 + 4 * 480);
-      expect(s.uncoveredDebtMinutes, 60 + 4 * 480);
+      expect(s.missingDays.map((d) => d.date.day), [4, 8, 9]);
+      expect(s.debtMinutes, 60 + 3 * 480);
+      expect(s.uncoveredDebtMinutes, 60 + 3 * 480);
       expect(s.activeUsufructMinutes, 480);
-      expect(s.bankDeltaMinutes, 240 - (60 + 4 * 480) - 480);
+      expect(s.bankDeltaMinutes, 240 - (60 + 3 * 480) - 480);
       expect(s.openDays.single.date.day, 3);
       expect(s.daysNeedingReview, isEmpty);
     });

@@ -103,12 +103,15 @@ Nunca usar horas estilo Excel (fracción de día): no representan saldos negativ
 
 ## Fichada con foto (celular)
 
-1. "Fichar ingreso/egreso" → abre la cámara → foto del biométrico.
-2. La hora propuesta es la del dispositivo. Se puede corregir, y la corrección
-   queda registrada (`hora_original`, `editado`).
-3. La foto se comprime (lado largo ≤ 1600 px, JPEG ~80 %) y se guarda local.
+1. "Fichar ingreso/egreso" → se confirma la hora y, **si se quiere**, se saca
+   la foto del biométrico (es opcional).
+2. La hora propuesta es la del dispositivo en el momento del toque. Se puede
+   corregir, y la corrección queda registrada (`*_original_min`, `editado`).
+3. Si hay un tramo abierto de un día anterior, hay que cerrarlo antes de fichar.
+   Un tramo que se superpone con otro del mismo día se bloquea.
+4. La foto se comprime (lado largo ≤ 1600 px, JPEG ~80 %) y se guarda local.
    Se sube al bucket privado `comprobantes/{user_id}/{yyyy}/{mm}/…` cuando hay red.
-4. Todo funciona sin conexión. La sincronización se reintenta sola y el estado
+5. Todo funciona sin conexión. La sincronización se reintenta sola y el estado
    (pendiente / sincronizado / error) se ve en la UI.
 
 ## Importación
@@ -167,6 +170,7 @@ supabase gen types dart ...     # tras cambiar el esquema
     más de lo que hay de saldo.
   - No hay licencias fuera del banco: lo único que cubre un día es un usufructo.
   - No hay turnos que crucen la medianoche.
+  - El día de hoy no genera deuda ni cuenta como faltante hasta que termina.
   - Los créditos de los cursos son enteros.
   - Ante un conflicto de sincronización gana el último que sincroniza.
   - Backend: Supabase en la nube (proyecto `umzfjkdeuvsyswoueafu`). No se usa

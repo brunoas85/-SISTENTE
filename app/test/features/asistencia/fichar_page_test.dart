@@ -50,21 +50,45 @@ void main() {
     await disposeTestApp(tester, deps);
   });
 
-  testWidgets('camino feliz: foto, confirmar ingreso y queda pendiente', (
+  Future<void> insertar(
+    TestDeps deps, {
+    required String id,
+    required String fecha,
+    required int ingreso,
+    int? egreso,
+  }) => deps.db
+      .into(deps.db.fichadas)
+      .insert(
+        FichadasCompanion.insert(
+          id: id,
+          userId: fakeUserId,
+          fecha: fecha,
+          ingresoMin: ingreso,
+          egresoMin: Value(egreso),
+          updatedAt: DateTime(2026, 9, 23),
+          syncStatus: SyncStatus.synced,
+        ),
+      );
+
+  testWidgets('camino feliz: fichar con foto, confirmar y queda pendiente', (
     tester,
   ) async {
     final deps = await pumpFichar(tester);
 
+    // Toque 1: abre la confirmación directo (la cámara es opcional).
     await tester.tap(find.byKey(const Key('boton-fichar')));
     await tester.pumpAndSettle();
-
-    expect(deps.capture.calls, 1);
+    expect(deps.capture.calls, 0);
     expect(find.text('Confirmar ingreso'), findsWidgets);
-    expect(find.byKey(const Key('hora-elegida')), findsOneWidget);
     expect(
       tester.widget<Text>(find.byKey(const Key('hora-elegida'))).data,
       '08:02',
     );
+
+    await tester.tap(find.byKey(const Key('sacar-foto')));
+    await tester.pumpAndSettle();
+    expect(deps.capture.calls, 1);
+    expect(find.byKey(const Key('quitar-foto')), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('confirmar-fichada')));
     await tester.pumpAndSettle();
@@ -82,31 +106,139 @@ void main() {
     expect(rows.single.editado, isFalse);
     expect(deps.photos.files, hasLength(1));
 
-    // Egreso a las 16:10 y el día queda cerrado.
-    deps.now = DateTime(2026, 9, 24, 16, 10);
+    // Egreso a las 12:10, sin foto (2 toques).
+    deps.now = DateTime(2026, 9, 24, 12, 10);
     await tester.tap(find.byKey(const Key('boton-fichar')));
     await tester.pumpAndSettle();
     expect(find.text('Confirmar egreso'), findsWidgets);
     await tester.tap(find.byKey(const Key('confirmar-fichada')));
     await tester.pumpAndSettle();
 
-    expect(find.text('08:02 – 16:10'), findsOneWidget);
-    expect(find.text('Trabajado hoy: 8:08'), findsOneWidget);
+    expect(find.text('08:02 – 12:10'), findsOneWidget);
+    // Hoy la deuda es provisoria: se informa pero no resta.
+    expect(find.text('Trabajado hoy: 4:08 · faltan 3:52'), findsOneWidget);
+    expect(
+      tester
+          .widget<Text>(find.byKey(const Key('saldo')))
+          .textSpan!
+          .toPlainText(),
+      'Banco · mes 0:00 · total 0:00',
+    );
     expect(find.text('Fichar ingreso'), findsOneWidget);
+    expect(deps.photos.files, hasLength(1));
 
     await disposeTestApp(tester, deps);
   });
 
-  testWidgets('si se cancela la cámara no se guarda nada', (tester) async {
+  testWidgets('sin foto: si se cancela la cámara se puede confirmar igual', (
+    tester,
+  ) async {
     final deps = TestDeps();
     deps.capture.result = null;
     await pumpFichar(tester, deps: deps);
 
     await tester.tap(find.byKey(const Key('boton-fichar')));
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sacar-foto')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('quitar-foto')), findsNothing);
 
-    expect(find.text('Confirmar ingreso'), findsNothing);
-    expect(await deps.db.select(deps.db.fichadas).get(), isEmpty);
+    await tester.tap(find.byKey(const Key('confirmar-fichada')));
+    await tester.pumpAndSettle();
+
+    final rows = await deps.db.select(deps.db.fichadas).get();
+    expect(rows.single.fotoIngresoLocal, isNull);
+    expect(deps.photos.files, isEmpty);
+    expect(find.text('Fichar egreso'), findsOneWidget);
+
+    await disposeTestApp(tester, deps);
+  });
+
+  testWidgets('tramo abierto de ayer: hay que cerrarlo con la hora a mano', (
+    tester,
+  ) async {
+    final deps = TestDeps();
+    await insertar(deps, id: 'ayer', fecha: '2026-09-23', ingreso: 480);
+    await pumpFichar(tester, deps: deps);
+
+    expect(find.byKey(const Key('aviso-tramo-anterior')), findsOneWidget);
+    expect(find.text('Cerrar tramo del 23/09/2026'), findsOneWidget);
+    expect(find.text('Fichar ingreso'), findsNothing);
+
+    await tester.tap(find.byKey(const Key('boton-fichar')));
+    await tester.pumpAndSettle();
+
+    // Sin hora propuesta: hay que elegirla antes de confirmar.
+    expect(
+      tester.widget<Text>(find.byKey(const Key('hora-elegida'))).data,
+      '--:--',
+    );
+    final confirmar = find.byKey(const Key('confirmar-fichada'));
+    expect(tester.widget<FilledButton>(confirmar).onPressed, isNull);
+
+    await tester.tap(find.byKey(const Key('elegir-hora')));
+    await tester.pumpAndSettle();
+    // Modo teclado del selector de hora.
+    await tester.tap(find.byIcon(Icons.keyboard_outlined));
+    await tester.pumpAndSettle();
+    final campos = find.descendant(
+      of: find.byType(Dialog),
+      matching: find.byType(TextField),
+    );
+    await tester.enterText(campos.at(0), '16');
+    await tester.enterText(campos.at(1), '05');
+    await tester.tap(find.text('Aceptar'));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.widget<Text>(find.byKey(const Key('hora-elegida'))).data,
+      '16:05',
+    );
+    await tester.tap(confirmar);
+    await tester.pumpAndSettle();
+
+    final ayer = await (deps.db.select(
+      deps.db.fichadas,
+    )..where((f) => f.id.equals('ayer'))).getSingle();
+    expect(ayer.egresoMin, 16 * 60 + 5);
+    expect(ayer.egresoOriginalMin, isNull);
+    expect(ayer.editado, isFalse);
+    // Ahora sí se puede fichar hoy.
+    expect(find.text('Fichar ingreso'), findsOneWidget);
+    expect(find.byKey(const Key('aviso-tramo-anterior')), findsNothing);
+
+    await disposeTestApp(tester, deps);
+  });
+
+  testWidgets('un ingreso que se superpone se bloquea y muestra el motivo', (
+    tester,
+  ) async {
+    final deps = TestDeps(now: DateTime(2026, 9, 24, 11));
+    // Tramo de hoy 08:00–12:00 cargado desde la PC; son las 11:00.
+    await insertar(
+      deps,
+      id: 'pc',
+      fecha: '2026-09-24',
+      ingreso: 480,
+      egreso: 720,
+    );
+    await pumpFichar(tester, deps: deps);
+
+    await tester.tap(find.byKey(const Key('boton-fichar')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'El tramo 11:00–abierto se superpone con el tramo 08:00–12:00.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<FilledButton>(find.byKey(const Key('confirmar-fichada')))
+          .onPressed,
+      isNull,
+    );
 
     await disposeTestApp(tester, deps);
   });

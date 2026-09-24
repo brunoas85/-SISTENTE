@@ -171,6 +171,56 @@ void main() {
     },
   );
 
+  test(
+    'una fichada sin foto se sube sin foto_*_path y queda sincronizada',
+    () async {
+      final f = await repo.ficharIngreso(
+        userId: fakeUserId,
+        date: hoy,
+        proposedMin: 480,
+        chosenMin: 480,
+      );
+      await repo.ficharEgreso(
+        userId: fakeUserId,
+        fichadaId: f.id,
+        proposedMin: 960,
+        chosenMin: 960,
+      );
+
+      final result = await sync.sync(fakeUserId);
+
+      expect(result.uploaded, 1);
+      expect(remote.calls, ['upsert:${f.id}']);
+      expect(remote.storage, isEmpty);
+      final subida = remote.rows[f.id]!;
+      expect(subida.fotoIngresoPath, isNull);
+      expect(subida.fotoEgresoPath, isNull);
+      expect(subida.toJson()['foto_ingreso_path'], isNull);
+      final local = (await repo.findById(f.id))!;
+      expect(local.syncStatus, SyncStatus.synced);
+      expect(local.syncError, isNull);
+    },
+  );
+
+  test('foto solo en el egreso: sube esa y deja el ingreso sin ruta', () async {
+    final f = await repo.ficharIngreso(
+      userId: fakeUserId,
+      date: hoy,
+      proposedMin: 480,
+      chosenMin: 480,
+    );
+    await egreso(f.id);
+
+    await sync.sync(fakeUserId);
+
+    expect(remote.calls, [
+      'upload:$fakeUserId/2026/09/${f.id}_egreso.jpg',
+      'upsert:${f.id}',
+    ]);
+    expect(remote.rows[f.id]!.fotoIngresoPath, isNull);
+    expect((await repo.findById(f.id))!.syncStatus, SyncStatus.synced);
+  });
+
   test('si falta la foto local sube la fila igual y avisa con error', () async {
     final f = await ingreso();
     photos.files.clear();

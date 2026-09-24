@@ -28,8 +28,8 @@ enum DayStatus {
   /// Sin fichada y con un usufructo vigente que lo cubre. No genera deuda.
   usufruct,
 
-  /// Día hábil pasado (o de hoy) sin fichada ni usufructo que lo cubra del
-  /// todo. Genera deuda igual a la jornada vigente, menos lo que cubra un
+  /// Día hábil pasado (anterior a "hoy") sin fichada ni usufructo que lo
+  /// cubra del todo. Genera deuda igual a la jornada vigente, menos lo que cubra un
   /// usufructo parcial.
   missing,
 
@@ -39,6 +39,10 @@ enum DayStatus {
   /// Día hábil posterior a "hoy" sin fichada: todavía no es faltante ni
   /// genera deuda.
   future,
+
+  /// Día hábil de hoy sin fichada: el día todavía no terminó, así que no es
+  /// faltante ni genera deuda.
+  today,
 
   /// Día hábil anterior al inicio del control (la primera fichada con la
   /// app) sin fichada: no es faltante ni genera deuda.
@@ -62,6 +66,7 @@ class DayResult {
     this.accumulationMinutes = 0,
     this.lostAccumulationMinutes = 0,
     this.fullUsufructMismatch = false,
+    this.provisionalDebtMinutes = 0,
   });
 
   final CalendarDate date;
@@ -109,6 +114,11 @@ class DayResult {
   /// revisar.
   final bool fullUsufructMismatch;
 
+  /// Solo para hoy: la deuda que habría si el día terminara ahora
+  /// (`max(jornada - trabajado, 0)`). Es informativa: **no** resta del banco
+  /// hasta que el día termina. Lo a favor de hoy sí computa.
+  final int provisionalDebtMinutes;
+
   /// Deuda que resta del banco.
   int get uncoveredDebtMinutes => debtMinutes - coveredDebtMinutes;
 
@@ -154,6 +164,22 @@ bool recordsOverlap(Iterable<DailyRecord> records) {
   return false;
 }
 
+/// Primer tramo de [others] que se superpone con [candidate] según
+/// [recordsOverlap], o `null` si no choca con ninguno. Se ignora el tramo
+/// con el mismo `id` que [candidate] (el que se está editando) y los de otra
+/// fecha.
+DailyRecord? firstOverlapping(
+  DailyRecord candidate,
+  Iterable<DailyRecord> others,
+) {
+  for (final other in others) {
+    if (other.date != candidate.date) continue;
+    if (candidate.id != null && other.id == candidate.id) continue;
+    if (recordsOverlap([other, candidate])) return other;
+  }
+  return null;
+}
+
 /// Calcula el estado y los minutos de cada día.
 /// Inicio del control: la fecha de la primera fichada, o `null` si todavía
 /// no hay ninguna.
@@ -172,17 +198,20 @@ class DayCalculator {
     this.today,
     this.controlStart,
     int defaultWorkdayMinutes = defaultWorkdayMinutes,
-  })  : _schedules = WorkdayScheduleResolver(
-          schedules,
-          defaultMinutes: defaultWorkdayMinutes,
-        ),
-        _holidays = {for (final h in holidays) h.date};
+  }) : _schedules = WorkdayScheduleResolver(
+         schedules,
+         defaultMinutes: defaultWorkdayMinutes,
+       ),
+       _holidays = {for (final h in holidays) h.date};
 
   final WorkdayScheduleResolver _schedules;
   final Set<CalendarDate> _holidays;
 
   /// Si se indica, los días hábiles posteriores sin fichada son
-  /// [DayStatus.future] (sin deuda) en vez de [DayStatus.missing].
+  /// [DayStatus.future] (sin deuda) en vez de [DayStatus.missing]. El día de
+  /// hoy no genera deuda hasta que termina: sin fichada es
+  /// [DayStatus.today], y con tramos cerrados su deuda queda en
+  /// [DayResult.provisionalDebtMinutes] sin restar (lo a favor sí computa).
   final CalendarDate? today;
 
   /// Inicio del control: el día en que se empieza a fichar con la app (ver
@@ -234,6 +263,7 @@ class DayCalculator {
       int? worked,
       int debt = 0,
       int credit = 0,
+      int provisionalDebt = 0,
     }) {
       final covered = debt < activeUsufruct ? debt : activeUsufruct;
       return DayResult(
@@ -251,8 +281,12 @@ class DayCalculator {
         accumulationMinutes: accumulation,
         lostAccumulationMinutes: lostAccumulation,
         fullUsufructMismatch: fullMismatch,
+        provisionalDebtMinutes: provisionalDebt,
       );
     }
+
+    // Hoy todavía no terminó: no genera deuda ni es faltante.
+    final isToday = today != null && date == today;
 
     if (dayRecords.isNotEmpty) {
       final complete = dayRecords.where((r) => !r.isOpen);
@@ -262,16 +296,18 @@ class DayCalculator {
       if (recordsOverlap(dayRecords)) return result(DayStatus.conflict);
       if (dayRecords.any((r) => r.isOpen)) return result(DayStatus.open);
 
-      final worked =
-          dayRecords.fold(0, (sum, r) => sum + workedMinutesOf(r)!);
+      final worked = dayRecords.fold(0, (sum, r) => sum + workedMinutesOf(r)!);
       if (!business) {
         // Fin de semana o feriado: todo suma al banco.
         return result(DayStatus.worked, worked: worked, credit: worked);
       }
+      final debt = workday > worked ? workday - worked : 0;
       return result(
         DayStatus.worked,
         worked: worked,
-        debt: workday > worked ? workday - worked : 0,
+        // La deuda de hoy no resta hasta que termine el día; lo a favor sí.
+        debt: isToday ? 0 : debt,
+        provisionalDebt: isToday ? debt : 0,
         credit: worked > workday ? worked - workday : 0,
       );
     }
@@ -284,6 +320,9 @@ class DayCalculator {
     final t = today;
     if (t != null && date.isAfter(t)) {
       return result(hasUsufruct ? DayStatus.usufruct : DayStatus.future);
+    }
+    if (isToday) {
+      return result(hasUsufruct ? DayStatus.usufruct : DayStatus.today);
     }
     final start = controlStart;
     if (!hasUsufruct && start != null && date.isBefore(start)) {
