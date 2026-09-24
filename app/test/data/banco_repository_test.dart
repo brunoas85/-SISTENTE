@@ -23,7 +23,7 @@ void main() {
   late InMemoryPhotoStore files;
   late BancoRepository repo;
 
-  setUp(() {
+  setUp(() async {
     db = newTestDatabase();
     files = InMemoryPhotoStore();
     repo = BancoRepository(
@@ -32,6 +32,8 @@ void main() {
       clock: steppingClock(DateTime(2026, 9, 24, 8)),
       newId: sequentialIds(),
     );
+    // Control desde el jueves 17/09 con jornadas exactas: saldo 0.
+    await insertarJornadasExactas(db);
   });
 
   tearDown(() => db.close());
@@ -203,8 +205,8 @@ void main() {
     );
 
     test('con saldo negativo por deuda no se puede usufructuar', () async {
-      // Lunes 8 h exactas (inicio del control), martes y miércoles faltantes.
-      await fichada(lunes, 480, 960);
+      // Martes y miércoles faltantes.
+      await borrarFichadas(db, ['2026-09-22', '2026-09-23']);
       await guardar(TipoMovimiento.acumulacion, sabadoPasado, minutos: 240);
       await expectLater(
         guardar(TipoMovimiento.usufructoParcial, viernes, minutos: 60),
@@ -214,6 +216,7 @@ void main() {
 
     test('un usufructo total sobre un día faltante cubre su deuda', () async {
       // Lunes 10 h (+2:00), martes faltante (-8:00), miércoles 14 h (+6:00).
+      await borrarFichadas(db, ['2026-09-21', '2026-09-22', '2026-09-23']);
       await fichada(lunes, 420, 1020);
       await fichada(CalendarDate(2026, 9, 23), 360, 1200);
       await guardar(TipoMovimiento.acumulacion, sabadoPasado, minutos: 30);
@@ -236,8 +239,8 @@ void main() {
       );
     });
 
-    test('editar solo el respaldo no vuelve a validar el saldo; cambiar los '
-        'minutos sí', () async {
+    test('el saldo se controla siempre, también al editar solo el respaldo, '
+        'sin contar dos veces el propio usufructo', () async {
       final acum = await guardar(
         TipoMovimiento.acumulacion,
         sabadoPasado,
@@ -248,9 +251,8 @@ void main() {
         viernes,
         minutos: 120,
       );
-      // La acumulación se pierde: el saldo queda en -2:00.
-      await repo.marcarPerdido(userId: fakeUserId, id: acum.id, perdido: true);
-
+      // Justo el saldo: editar el respaldo no cuenta el propio usufructo
+      // dos veces.
       final editado = await guardar(
         TipoMovimiento.usufructoParcial,
         viernes,
@@ -261,15 +263,118 @@ void main() {
       expect(editado.numeroGde, 'NO-2026-00000001-APN-PNL#APNAC');
       expect(editado.revision, 2);
 
+      // La acumulación se pierde (se permite aunque el saldo quede negativo).
+      await repo.marcarPerdido(userId: fakeUserId, id: acum.id, perdido: true);
+
+      // Ahora cualquier edición del usufructo se bloquea, aunque sea solo el
+      // número GDE.
       await expectLater(
         guardar(
           TipoMovimiento.usufructoParcial,
           viernes,
           id: u.id,
-          minutos: 90,
+          minutos: 120,
+          numeroGde: 'NO-2026-00000002-APN-PNL#APNAC',
         ),
-        rechazo('Saldo disponible 0:00, pedís 1:30.'),
+        rechazo('Saldo disponible 0:00, pedís 2:00.'),
       );
+      expect(
+        (await repo.findMovimiento(u.id))!.numeroGde,
+        'NO-2026-00000001-APN-PNL#APNAC',
+      );
+    });
+  });
+
+  group('inicio del control y fechas', () {
+    test('no se cargan acumulaciones con fecha futura', () async {
+      await expectLater(
+        guardar(
+          TipoMovimiento.acumulacion,
+          CalendarDate(2026, 9, 26),
+          minutos: 60,
+        ),
+        rechazo(contains('No se cargan acumulaciones con fecha futura')),
+      );
+      // Hoy sí.
+      final m = await guardar(TipoMovimiento.acumulacion, hoy, minutos: 60);
+      expect(m.fecha, '2026-09-24');
+    });
+
+    test('todo de cero: no se cargan movimientos antes de la primera '
+        'fichada', () async {
+      await expectLater(
+        guardar(
+          TipoMovimiento.acumulacion,
+          CalendarDate(2026, 9, 12),
+          minutos: 60,
+        ),
+        rechazo(
+          'El control empezó el 17/09/2026 (tu primera fichada) y el saldo '
+          'arranca en 0 ese día. No se cargan movimientos con fecha anterior.',
+        ),
+      );
+      final m = await guardar(
+        TipoMovimiento.acumulacion,
+        CalendarDate(2026, 9, 17),
+        minutos: 60,
+      );
+      expect(m.fecha, '2026-09-17');
+    });
+
+    test(
+      'sin fichadas el control no empezó y no se cargan movimientos',
+      () async {
+        await borrarFichadas(db, semanaFicticia);
+        await expectLater(
+          guardar(TipoMovimiento.acumulacion, hoy, minutos: 60),
+          rechazo(contains('arranca en 0 con tu primera fichada')),
+        );
+      },
+    );
+
+    test('uno anterior que llega por sync no computa y queda para revisar; '
+        'se puede marcar perdido o borrar', () async {
+      await repo.applyRemoteMovimientos([
+        RemoteMovimiento(
+          id: 'importado',
+          userId: fakeUserId,
+          tipo: 'acumulacion',
+          fecha: '2026-09-12',
+          minutos: 600,
+          updatedAt: DateTime.utc(2026, 9, 24, 13),
+        ),
+      ]);
+      final ctx = await repo.contexto(fakeUserId);
+      final balance = calculateBankStatus(
+        calculator: ctx.calculator,
+        records: ctx.records,
+        movements: [for (final m in ctx.movimientos) m.toBankMovement()],
+      );
+      expect(balance.balanceMinutes, 0);
+      expect(balance.current.movementsOutsideControl.single.id, 'importado');
+      // No habilita usufructos.
+      await expectLater(
+        guardar(TipoMovimiento.usufructoParcial, viernes, minutos: 60),
+        rechazo('Saldo disponible 0:00, pedís 1:00.'),
+      );
+      // Editarlo sin moverlo de fecha se bloquea…
+      await expectLater(
+        guardar(
+          TipoMovimiento.acumulacion,
+          CalendarDate(2026, 9, 12),
+          id: 'importado',
+          minutos: 600,
+        ),
+        rechazo(contains('No se cargan movimientos con fecha anterior')),
+      );
+      // …pero se puede marcar perdido y borrar.
+      await repo.marcarPerdido(
+        userId: fakeUserId,
+        id: 'importado',
+        perdido: true,
+      );
+      await repo.borrarMovimiento(userId: fakeUserId, id: 'importado');
+      expect((await repo.findMovimiento('importado'))!.deletedAt, isNotNull);
     });
   });
 

@@ -27,20 +27,68 @@ void main() {
   });
 
   group('calculateBankStatus', () {
-    test('solo movimientos, sin fichadas: no inventa días faltantes', () {
+    test('sin fichadas el control no empezó: saldo 0 y los movimientos '
+        'quedan para revisar', () {
       final calc = buildBankCalculator(today: hoy);
+      final acumulacion = BankMovement.accumulation(
+        date: CalendarDate(2026, 9, 5),
+        minutes: 240,
+      );
       final s = calculateBankStatus(
         calculator: calc,
         movements: [
-          // Sábado de hace tres semanas.
-          BankMovement.accumulation(
-            date: CalendarDate(2026, 9, 5),
-            minutes: 240,
+          acumulacion,
+          BankMovement.usufruct(
+            date: lunesQueViene,
+            scope: UsufructScope.partial,
+            minutes: 60,
           ),
         ],
       );
-      expect(s.balanceMinutes, 240);
+      expect(s.balanceMinutes, 0);
+      expect(s.futureUsufructMinutes, 0);
+      expect(s.availableMinutes, 0);
+      // Sin fichadas el inicio es hoy: ningún día anterior es faltante.
       expect(s.current.missingDays, isEmpty);
+      expect(s.current.movementsOutsideControl, [acumulacion]);
+      expect(calc.countsMovementsOn(hoy), isFalse);
+      expect(calc.countsMovementsOn(lunesQueViene), isFalse);
+    });
+
+    test('todo de cero: un movimiento anterior a la primera fichada no '
+        'computa y el día queda para revisar', () {
+      final records = [
+        rec(martes, hm(8, 0), hm(16, 0)),
+        rec(miercoles, hm(8, 0), hm(16, 0)),
+      ];
+      final calc = buildBankCalculator(today: hoy, records: records);
+      final anterior = BankMovement.accumulation(
+        date: CalendarDate(2026, 9, 19),
+        minutes: 300,
+      );
+      final s = calculateBankStatus(
+        calculator: calc,
+        records: records,
+        movements: [
+          anterior,
+          BankMovement.usufruct(
+            date: lunes,
+            scope: UsufructScope.full,
+            minutes: 480,
+          ),
+          BankMovement.accumulation(date: martes, minutes: 60),
+        ],
+      );
+      // Solo computa la acumulación del martes (inicio del control).
+      expect(s.balanceMinutes, 60);
+      expect(s.current.movementsOutsideControl, hasLength(2));
+      final sabado19 = s.current.days.firstWhere(
+        (d) => d.date == CalendarDate(2026, 9, 19),
+      );
+      expect(sabado19.needsReview, isTrue);
+      expect(sabado19.accumulationMinutes, 0);
+      expect(calc.countsMovementsOn(martes), isTrue);
+      expect(calc.countsMovementsOn(lunes), isFalse);
     });
 
     test('los usufructos a futuro no restan del saldo actual pero sí del '
@@ -92,18 +140,22 @@ void main() {
     });
 
     test('un movimiento perdido no computa', () {
-      final calc = buildBankCalculator(today: hoy);
+      final records = [
+        rec(lunes, hm(8, 0), hm(16, 0)),
+        rec(martes, hm(8, 0), hm(16, 0)),
+        rec(miercoles, hm(8, 0), hm(16, 0)),
+      ];
       final s = calculateBankStatus(
-        calculator: calc,
+        calculator: buildBankCalculator(today: hoy, records: records),
+        records: records,
         movements: [
-          BankMovement.accumulation(date: sabado, minutes: 60),
           BankMovement.accumulation(
-            date: CalendarDate(2026, 9, 19),
+            date: martes,
             minutes: 240,
             status: MovementStatus.lost,
           ),
           BankMovement.usufruct(
-            date: lunes,
+            date: miercoles,
             scope: UsufructScope.full,
             minutes: 480,
             status: MovementStatus.lost,
@@ -226,7 +278,7 @@ void main() {
   });
 
   group('usufructo antes del inicio del control', () {
-    test('un usufructo parcial no genera deuda por el resto de la jornada', () {
+    test('no computa ni cubre deuda: el día queda para revisar', () {
       final c = DayCalculator(controlStart: miercoles, today: hoy);
       final d = c.calculate(
         lunes,
@@ -238,9 +290,11 @@ void main() {
           ),
         ],
       );
-      expect(d.status, DayStatus.usufruct);
+      expect(d.status, DayStatus.beforeControl);
       expect(d.debtMinutes, 0);
-      expect(d.bankDeltaMinutes, -120);
+      expect(d.bankDeltaMinutes, 0);
+      expect(d.outsideControlMovements, hasLength(1));
+      expect(d.needsReview, isTrue);
     });
   });
 }

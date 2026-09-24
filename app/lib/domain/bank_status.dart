@@ -5,9 +5,9 @@ import 'day_calculation.dart';
 import 'models.dart';
 
 /// Inicio del control para el banco: la primera fichada o, si todavía no
-/// hay ninguna, [today]. Así, cargar solo movimientos manuales (por ej. una
-/// acumulación de un sábado anterior) no convierte en faltantes los días
-/// hábiles sin datos.
+/// hay ninguna, [today] (así ningún día anterior es faltante). Sin fichadas
+/// el control no empezó: [buildBankCalculator] no computa ningún movimiento
+/// manual ("todo de cero").
 CalendarDate bankControlStart(
   Iterable<DailyRecord> records,
   CalendarDate today,
@@ -15,7 +15,9 @@ CalendarDate bankControlStart(
 
 /// Calculador que usan el saldo de Fichar, la pantalla Banco y la validación
 /// de usufructos: jornada por agrupamiento, feriados, hoy e inicio del
-/// control ([bankControlStart]).
+/// control ([bankControlStart]). "Todo de cero": el saldo arranca en 0 en la
+/// primera fichada; los movimientos anteriores (o todos, si todavía no hay
+/// fichadas) no computan y quedan para revisar.
 DayCalculator buildBankCalculator({
   required CalendarDate today,
   Iterable<DailyRecord> records = const [],
@@ -27,6 +29,7 @@ DayCalculator buildBankCalculator({
   holidays: holidays,
   today: today,
   controlStart: bankControlStart(records, today),
+  controlStarted: controlStartFrom(records) != null,
   agrupamiento: agrupamiento,
 );
 
@@ -72,7 +75,9 @@ BankStatus calculateBankStatus({
   var futureUsufruct = 0;
   var futureAccumulation = 0;
   for (final m in movements) {
-    if (!m.date.isAfter(today)) continue;
+    if (!m.date.isAfter(today) || !calculator.countsMovementsOn(m.date)) {
+      continue;
+    }
     if (m.isActiveUsufruct) futureUsufruct += m.minutes;
     if (m.isActiveAccumulation) futureAccumulation += m.minutes;
   }

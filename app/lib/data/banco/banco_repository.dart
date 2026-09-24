@@ -120,11 +120,14 @@ class BancoRepository {
 
   /// Crea o edita un movimiento. Queda pendiente de subir.
   ///
-  /// - Acumulación: cualquier día (el caso típico es un sábado).
+  /// - "Todo de cero": nada antes del inicio del control (primera fichada).
+  /// - Acumulación: cualquier día hasta hoy (el caso típico es un sábado);
+  ///   nunca con fecha futura.
   /// - Usufructo total: solo día hábil; los minutos son la jornada vigente.
   /// - Usufructo parcial: solo día hábil.
-  /// - Un usufructo se valida contra el saldo disponible, que incluye los
-  ///   usufructos ya cargados a futuro (ver [validarMovimiento]).
+  /// - Un usufructo vigente se valida siempre contra el saldo disponible,
+  ///   que incluye los usufructos ya cargados a futuro (ver
+  ///   [validarMovimiento]).
   ///
   /// Lanza [BancoInvalidoException] si no se puede guardar.
   Future<LocalMovimiento> guardarMovimiento({
@@ -195,6 +198,8 @@ class BancoRepository {
 
   /// Marca un movimiento como perdido (no computa) o lo vuelve a vigente.
   /// Volver a vigente un usufructo se valida contra el saldo disponible.
+  /// Marcar como perdida una acumulación no se bloquea aunque el saldo quede
+  /// negativo (decisión de Bruno).
   Future<LocalMovimiento> marcarPerdido({
     required String userId,
     required String id,
@@ -202,9 +207,13 @@ class BancoRepository {
   }) async {
     final m = await _activo(userId, id);
     if (m.perdido == perdido) return m;
-    if (!perdido && m.kind.esUsufructo) {
+    final ctx = await contexto(userId);
+    // Uno anterior al inicio del control no computa igual: no se valida.
+    if (!perdido &&
+        m.kind.esUsufructo &&
+        ctx.calculator.countsMovementsOn(m.date)) {
       final motivo = validarSaldoUsufructo(
-        contexto: await contexto(userId),
+        contexto: ctx,
         id: m.id,
         tipo: m.kind,
         fecha: m.date,

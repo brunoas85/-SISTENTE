@@ -429,7 +429,7 @@ void main() {
   });
 
   testWidgets('el saldo es el real: incluye acumulaciones y usufructos, no '
-      'los perdidos', (tester) async {
+      'los perdidos ni los anteriores al inicio del control', (tester) async {
     final deps = TestDeps(now: DateTime(2026, 9, 24, 18));
     // Martes 22: 10 h (+2:00, inicio del control). Miércoles 23: 8 h.
     await insertar(
@@ -468,16 +468,18 @@ void main() {
             syncStatus: SyncStatus.synced,
           ),
         );
-    await movimiento('m1', 'acumulacion', null, '2026-09-19', 180); // +3:00
+    await movimiento('m1', 'acumulacion', null, '2026-09-22', 180); // +3:00
     await movimiento('m2', 'usufructo', 'parcial', '2026-09-23', 60); // -1:00
     await movimiento(
       'm3',
       'acumulacion',
       null,
-      '2026-09-20',
+      '2026-09-23',
       600,
       estado: 'perdido',
     );
+    // Anterior al inicio del control (22/09): no computa ("todo de cero").
+    await movimiento('m4', 'acumulacion', null, '2026-09-19', 300);
     await pumpFichar(tester, deps: deps);
 
     final saldo = tester.widget<Text>(find.byKey(const Key('saldo')));

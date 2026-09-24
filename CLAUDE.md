@@ -165,7 +165,14 @@ supabase gen types dart ...     # tras cambiar el esquema
   - Un usufructo parcial en un día sin fichada queda para revisar, y un
     usufructo en fin de semana o feriado descuenta igual.
   - Para ver si alcanza el saldo de un usufructo se cuentan también los
-    usufructos ya cargados a futuro.
+    usufructos ya cargados a futuro. El saldo se controla siempre, en el alta
+    y en cualquier edición.
+  - Un usufructo parcial es menor que la jornada, y no puede haber dos
+    usufructos el mismo día.
+  - No se cargan acumulaciones con fecha futura. Marcar una acumulación como
+    perdida o borrarla se permite aunque el saldo quede negativo.
+  - "Todo de cero": el saldo arranca en 0 en el inicio del control. Los
+    movimientos anteriores a esa fecha no computan.
   - Los fines de semana, los feriados y los no laborables turísticos (puentes)
     **no son laborables: no se puede fichar esos días**. Solo se puede cerrar
     un tramo abierto de un día hábil anterior. Las horas de un sábado se cargan

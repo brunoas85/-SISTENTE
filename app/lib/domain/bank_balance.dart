@@ -57,6 +57,12 @@ class BankBalance {
   List<DayResult> get missingDays =>
       days.where((d) => d.status == DayStatus.missing).toList();
 
+  /// Movimientos que no computan por tener fecha anterior al inicio del
+  /// control (o por no haber fichadas todavía). Quedan para revisar.
+  List<BankMovement> get movementsOutsideControl => [
+    for (final d in days) ...d.outsideControlMovements,
+  ];
+
   /// Días que necesitan revisión manual (ver [DayResult.needsReview]).
   List<DayResult> get daysNeedingReview =>
       days.where((d) => d.needsReview).toList();

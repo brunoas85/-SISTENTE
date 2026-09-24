@@ -187,6 +187,7 @@ class _BancoPageState extends ConsumerState<BancoPage> {
                 _MovimientoTile(
                   movimiento: m,
                   codigo: r.codigoTipo(m.tipoDocumentoId),
+                  fueraDelControl: r.fueraDelControl(m),
                   onTap: () => _editar(m),
                 ),
           ],
@@ -211,6 +212,7 @@ class _SaldoCard extends StatelessWidget {
     final bg = negativo ? scheme.errorContainer : scheme.primaryContainer;
     final fg = negativo ? scheme.onErrorContainer : scheme.onPrimaryContainer;
     final faltantes = estado.current.missingDays.length;
+    final fuera = resumen.movimientosFueraDelControl.length;
 
     return Card(
       color: bg,
@@ -246,6 +248,29 @@ class _SaldoCard extends StatelessWidget {
                 'disponible ${formatSigned(estado.availableMinutes)}',
                 key: const Key('saldo-disponible'),
                 style: theme.textTheme.bodyMedium?.copyWith(color: fg),
+              ),
+            Text(
+              switch (resumen.inicioControl) {
+                null =>
+                  'Todavía no fichaste: el saldo arranca en 0 con tu primera '
+                      'fichada.',
+                final inicio => 'Control desde el ${formatDate(inicio)}.',
+              },
+              key: const Key('inicio-control'),
+              style: theme.textTheme.bodyMedium?.copyWith(color: fg),
+            ),
+            if (fuera > 0)
+              Text(
+                fuera == 1
+                    ? '1 movimiento anterior al inicio del control no computa. '
+                          'Revisalo.'
+                    : '$fuera movimientos anteriores al inicio del control no '
+                          'computan. Revisalos.',
+                key: const Key('fuera-del-control'),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: fg,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             if (faltantes > 0)
               Text(
@@ -439,11 +464,15 @@ class _MovimientoTile extends StatelessWidget {
   const _MovimientoTile({
     required this.movimiento,
     required this.codigo,
+    required this.fueraDelControl,
     required this.onTap,
   });
 
   final LocalMovimiento movimiento;
   final String? codigo;
+
+  /// No computa por el inicio del control: queda para revisar.
+  final bool fueraDelControl;
   final VoidCallback onTap;
 
   @override
@@ -453,6 +482,8 @@ class _MovimientoTile extends StatelessWidget {
     final documento = [?codigo, ?m.numeroGde].join(' · ');
     final detalles = [
       '${_capitalizar(nombreDiaSemana(m.date))} ${formatDate(m.date)}',
+      if (fueraDelControl)
+        'No computa: es anterior al inicio del control. Revisalo.',
       if (m.perdido) 'Perdido: no computa',
       if (documento.isNotEmpty) documento,
       if (m.tieneAdjunto) m.adjuntoEsPdf ? 'Adjunto PDF' : 'Adjunto imagen',
@@ -467,12 +498,14 @@ class _MovimientoTile extends StatelessWidget {
         m.kind.esUsufructo
             ? Icons.remove_circle_outline
             : Icons.add_circle_outline,
-        color: m.perdido ? theme.disabledColor : null,
+        color: m.perdido || fueraDelControl ? theme.disabledColor : null,
       ),
       title: Text(
         '${m.kind.label} ${_minutosConSigno(m)}',
         style: theme.textTheme.titleMedium?.copyWith(
-          decoration: m.perdido ? TextDecoration.lineThrough : null,
+          decoration: m.perdido || fueraDelControl
+              ? TextDecoration.lineThrough
+              : null,
           fontFeatures: const [FontFeature.tabularFigures()],
         ),
       ),
@@ -562,7 +595,13 @@ class _Tabla extends ConsumerWidget {
                 DataCell(
                   Tooltip(
                     message: estadoLabel(m),
-                    child: Text(m.perdido ? 'Perdido' : 'Vigente'),
+                    child: Text(
+                      resumen.fueraDelControl(m)
+                          ? 'No computa'
+                          : m.perdido
+                          ? 'Perdido'
+                          : 'Vigente',
+                    ),
                   ),
                 ),
                 DataCell(

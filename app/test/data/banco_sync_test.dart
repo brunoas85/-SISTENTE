@@ -22,7 +22,7 @@ void main() {
   late SyncService sync;
   final sabado = CalendarDate(2026, 9, 19);
 
-  setUp(() {
+  setUp(() async {
     db = newTestDatabase();
     files = InMemoryPhotoStore();
     final clock = steppingClock(DateTime(2026, 9, 24, 8));
@@ -36,6 +36,8 @@ void main() {
       banco: BancoSync(repository: banco, remote: remote),
       clock: clock,
     );
+    // Control desde el 17/09 (jornadas exactas, ya sincronizadas).
+    await insertarJornadasExactas(db);
   });
 
   tearDown(() => db.close());

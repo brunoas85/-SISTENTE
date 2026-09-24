@@ -70,6 +70,7 @@ class DayResult {
     this.lostAccumulationMinutes = 0,
     this.fullUsufructMismatch = false,
     this.provisionalDebtMinutes = 0,
+    this.outsideControlMovements = const [],
   });
 
   final CalendarDate date;
@@ -122,6 +123,11 @@ class DayResult {
   /// hasta que el día termina. Lo a favor de hoy sí computa.
   final int provisionalDebtMinutes;
 
+  /// Movimientos manuales con fecha anterior al inicio del control (o
+  /// cargados cuando todavía no hay fichadas). "Todo de cero": no computan
+  /// (ni vigentes ni perdidos) y el día queda para revisar.
+  final List<BankMovement> outsideControlMovements;
+
   /// Deuda que resta del banco.
   int get uncoveredDebtMinutes => debtMinutes - coveredDebtMinutes;
 
@@ -140,6 +146,7 @@ class DayResult {
       status == DayStatus.nonWorkingDayRecords ||
       status == DayStatus.invalid ||
       fullUsufructMismatch ||
+      outsideControlMovements.isNotEmpty ||
       (status == DayStatus.missing && coveredDebtMinutes > 0);
 }
 
@@ -204,6 +211,7 @@ class DayCalculator {
     Iterable<Holiday> holidays = const [],
     this.today,
     this.controlStart,
+    this.controlStarted = true,
     Agrupamiento? agrupamiento,
     int? defaultWorkdayMinutes,
   }) : _schedules = WorkdayScheduleResolver(
@@ -226,7 +234,22 @@ class DayCalculator {
   /// Inicio del control: el día en que se empieza a fichar con la app (ver
   /// [controlStartFrom]). Los días hábiles anteriores sin fichada son
   /// [DayStatus.beforeControl] (sin deuda) en vez de [DayStatus.missing].
+  ///
+  /// "Todo de cero": los movimientos manuales con fecha anterior no computan
+  /// (quedan en [DayResult.outsideControlMovements] para revisar).
   final CalendarDate? controlStart;
+
+  /// `false` si el control todavía no empezó (no hay ninguna fichada):
+  /// ningún movimiento manual computa. [controlStart] puede ser igual "hoy"
+  /// para que los días anteriores no sean faltantes.
+  final bool controlStarted;
+
+  /// `true` si un movimiento manual con fecha [date] computa en el saldo.
+  bool countsMovementsOn(CalendarDate date) {
+    if (!controlStarted) return false;
+    final start = controlStart;
+    return start == null || !date.isBefore(start);
+  }
 
   /// Feriado o día no laborable (según la lista recibida).
   bool isHoliday(CalendarDate date) => _holidays.contains(date);
@@ -244,7 +267,10 @@ class DayCalculator {
     Iterable<BankMovement> movements = const [],
   }) {
     final dayRecords = records.where((r) => r.date == date).toList();
-    final dayMovements = movements.where((m) => m.date == date).toList();
+    final allDayMovements = movements.where((m) => m.date == date).toList();
+    final counts = countsMovementsOn(date);
+    final dayMovements = counts ? allDayMovements : const <BankMovement>[];
+    final outside = counts ? const <BankMovement>[] : allDayMovements;
 
     final workday = workdayMinutesFor(date);
     final business = isBusinessDay(date);
@@ -291,6 +317,7 @@ class DayCalculator {
         lostAccumulationMinutes: lostAccumulation,
         fullUsufructMismatch: fullMismatch,
         provisionalDebtMinutes: provisionalDebt,
+        outsideControlMovements: List.unmodifiable(outside),
       );
     }
 
@@ -335,10 +362,9 @@ class DayCalculator {
     }
     final start = controlStart;
     if (start != null && date.isBefore(start)) {
-      // Antes del inicio del control no hay fichadas que comparar: no hay
-      // deuda. Un usufructo (total o parcial) cargado ese día descuenta lo
-      // que se cargó.
-      return result(hasUsufruct ? DayStatus.usufruct : DayStatus.beforeControl);
+      // Antes del inicio del control no hay deuda, y sus movimientos no
+      // computan ("todo de cero").
+      return result(DayStatus.beforeControl);
     }
     // Día hábil pasado sin fichada: si un usufructo vigente lo cubre, no hay
     // deuda. Si no, la jornada completa es deuda, menos lo que cubra un

@@ -342,3 +342,40 @@ class FakeAttachmentPicker implements AttachmentPicker {
 
 /// Bytes que empiezan como un PDF (no es un documento real).
 Uint8List fakePdf() => Uint8List.fromList('%PDF-1.4 ficticio'.codeUnits);
+
+/// Días hábiles ficticios del 17/09/2026 al 23/09/2026 (jueves a
+/// miércoles, sin el fin de semana).
+const semanaFicticia = [
+  '2026-09-17',
+  '2026-09-18',
+  '2026-09-21',
+  '2026-09-22',
+  '2026-09-23',
+];
+
+/// Inserta fichadas sincronizadas de 08:00 a 16:00 (jornada exacta de 8 h:
+/// no suman ni restan) en [fechas]. La primera es el inicio del control.
+Future<void> insertarJornadasExactas(
+  AppDatabase db, [
+  List<String> fechas = semanaFicticia,
+]) async {
+  for (final f in fechas) {
+    await db
+        .into(db.fichadas)
+        .insert(
+          FichadasCompanion.insert(
+            id: 'jornada-$f',
+            userId: fakeUserId,
+            fecha: f,
+            ingresoMin: 480,
+            egresoMin: const Value(960),
+            updatedAt: DateTime(2026, 9, 16),
+            syncStatus: SyncStatus.synced,
+          ),
+        );
+  }
+}
+
+/// Borra las fichadas de [fechas] (para armar días faltantes).
+Future<void> borrarFichadas(AppDatabase db, List<String> fechas) =>
+    (db.delete(db.fichadas)..where((f) => f.fecha.isIn(fechas))).go();

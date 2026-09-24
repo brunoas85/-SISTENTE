@@ -40,6 +40,21 @@ class ResumenBanco {
 
   DayCalculator get calculator => contexto.calculator;
 
+  /// Inicio del control (primera fichada), o `null` si todavía no hay
+  /// fichadas: el saldo arranca en 0 ese día ("todo de cero").
+  CalendarDate? get inicioControl => controlStartFrom(contexto.records);
+
+  /// El movimiento no computa por ser anterior al inicio del control (o por
+  /// no haber fichadas todavía). Queda para revisar.
+  bool fueraDelControl(LocalMovimiento m) =>
+      !calculator.countsMovementsOn(m.date);
+
+  /// Movimientos que no computan por el inicio del control.
+  List<LocalMovimiento> get movimientosFueraDelControl => [
+    for (final m in movimientos)
+      if (fueraDelControl(m)) m,
+  ];
+
   /// Tipos de documento activos, por código.
   List<LocalTipoDocumento> get tiposActivos => [
     for (final t in tipos.values)

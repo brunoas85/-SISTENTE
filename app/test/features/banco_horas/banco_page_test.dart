@@ -88,6 +88,7 @@ void main() {
   testWidgets('camino feliz en el celular: lista con estado de sync y filtro '
       'por mes', (tester) async {
     final deps = TestDeps();
+    await insertarJornadasExactas(deps.db);
     final r = repo(deps);
     await r.guardarMovimiento(
       userId: fakeUserId,
@@ -138,6 +139,7 @@ void main() {
     tester,
   ) async {
     final deps = TestDeps();
+    await insertarJornadasExactas(deps.db);
     await repo(deps).guardarMovimiento(
       userId: fakeUserId,
       draft: MovimientoDraft(
@@ -206,6 +208,7 @@ void main() {
       'usufructo bloqueado por saldo: "Saldo disponible X, pedís Y"',
       (tester) async {
         final deps = TestDeps();
+        await insertarJornadasExactas(deps.db);
         await repo(deps).guardarMovimiento(
           userId: fakeUserId,
           draft: MovimientoDraft(
@@ -265,6 +268,7 @@ void main() {
       'acumulación en un sábado, con tipo de documento y adjunto PDF',
       (tester) async {
         final deps = TestDeps();
+        await insertarJornadasExactas(deps.db);
         deps.picker.result = PickedFile(name: 'ficticio.pdf', bytes: fakePdf());
         final t = await repo(deps)
             .guardarTipo(userId: fakeUserId, codigo: 'FOESC');
@@ -325,6 +329,7 @@ void main() {
       tester,
     ) async {
       final deps = TestDeps(now: DateTime(2026, 9, 26, 10)); // sábado
+      await insertarJornadasExactas(deps.db);
       await pumpBanco(tester, deps: deps);
       await tester.tap(find.byKey(const Key('nuevo-movimiento')));
       await tester.pumpAndSettle();
@@ -333,6 +338,96 @@ void main() {
       expect(
         textOf(tester, 'movimiento-error'),
         'El 26/09/2026 es sábado. El usufructo se carga solo en día hábil.',
+      );
+      await disposeTestApp(tester, deps);
+    });
+  });
+
+  group('inicio del control ("todo de cero")', () {
+    testWidgets('un movimiento anterior al inicio no computa y queda para '
+        'revisar', (tester) async {
+      final deps = TestDeps();
+      await insertarJornadasExactas(deps.db);
+      // Llegó por sync con fecha anterior a la primera fichada (17/09).
+      await deps.db
+          .into(deps.db.bancoMovimientos)
+          .insert(
+            BancoMovimientosCompanion.insert(
+              id: 'anterior',
+              userId: fakeUserId,
+              tipo: 'acumulacion',
+              fecha: '2026-09-12',
+              minutos: 600,
+              updatedAt: DateTime(2026, 9, 20),
+              syncStatus: SyncStatus.synced,
+            ),
+          );
+      await pumpBanco(tester, deps: deps);
+
+      expect(textOf(tester, 'saldo-banco'), '0:00');
+      expect(textOf(tester, 'inicio-control'), 'Control desde el 17/09/2026.');
+      expect(
+        textOf(tester, 'fuera-del-control'),
+        '1 movimiento anterior al inicio del control no computa. Revisalo.',
+      );
+      expect(
+        find.textContaining('No computa: es anterior al inicio del control'),
+        findsOneWidget,
+      );
+
+      await disposeTestApp(tester, deps);
+    });
+
+    testWidgets('sin fichadas: el saldo arranca con la primera y no se cargan '
+        'movimientos', (tester) async {
+      final deps = await pumpBanco(tester);
+      expect(
+        textOf(tester, 'inicio-control'),
+        'Todavía no fichaste: el saldo arranca en 0 con tu primera fichada.',
+      );
+      await tester.tap(find.byKey(const Key('nuevo-movimiento')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('minutos')), '1:00');
+      await tester.pumpAndSettle();
+      expect(
+        textOf(tester, 'movimiento-error'),
+        contains('arranca en 0 con tu primera fichada'),
+      );
+      await disposeTestApp(tester, deps);
+    });
+
+    testWidgets('no se puede cargar una acumulación con fecha futura', (
+      tester,
+    ) async {
+      final deps = TestDeps();
+      await insertarJornadasExactas(deps.db);
+      await pumpBanco(tester, deps: deps);
+      await tester.tap(find.byKey(const Key('nuevo-movimiento')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('elegir-fecha')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('26'));
+      await tester.tap(find.text('Aceptar'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('minutos')), '4:00');
+      await tester.pumpAndSettle();
+
+      expect(
+        textOf(tester, 'movimiento-error'),
+        'No se cargan acumulaciones con fecha futura: cargala el día que '
+        'hiciste las horas o después (hoy es 24/09/2026).',
+      );
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.ancestor(
+                of: find.text('Guardar'),
+                matching: find.byWidgetPredicate((w) => w is FilledButton),
+              ),
+            )
+            .onPressed,
+        isNull,
       );
       await disposeTestApp(tester, deps);
     });

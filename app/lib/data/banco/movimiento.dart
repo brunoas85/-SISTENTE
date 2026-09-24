@@ -8,10 +8,18 @@
 //   documento GDE que lo respalda.
 // - Un usufructo parcial mayor que la deuda del día descuenta completo (lo
 //   que sobra no vuelve al banco).
+//
+// Confirmado por Bruno (24/09/2026):
 // - Un usufructo parcial tiene que ser menor que la jornada, y no se cargan
 //   dos usufructos que se pisen el mismo día (un día tiene un solo estado).
-// - Editar solo el respaldo (documento, número, adjunto, observación) de un
-//   usufructo ya cargado no lo vuelve a validar contra el saldo.
+// - El saldo se controla siempre: cualquier edición de un usufructo vigente,
+//   aunque sea solo del respaldo, se vuelve a validar.
+// - No se cargan acumulaciones con fecha futura.
+// - Marcar como perdida o borrar una acumulación no se bloquea aunque el
+//   saldo quede negativo.
+// - "Todo de cero": el saldo arranca en 0 en el inicio del control (la
+//   primera fichada). No se cargan movimientos anteriores; si llega alguno
+//   (sync, importación) no computa y queda para revisar.
 import '../../core/format/formatters.dart';
 import '../../domain/domain.dart';
 import '../attachments/attachment.dart';
@@ -178,16 +186,38 @@ String mensajeSaldoInsuficiente(int disponible, int pedido) =>
     'Saldo disponible ${formatMinutes(disponible)}, '
     'pedís ${formatMinutes(pedido)}.';
 
+/// Motivo por el que no se puede cargar un movimiento en [fecha] según el
+/// inicio del control ("todo de cero"), o `null`.
+///
+/// - Sin fichadas el control todavía no empezó: no se cargan movimientos
+///   (el saldo arranca en 0 con la primera fichada).
+/// - Con fichadas, no se cargan movimientos anteriores a la primera.
+String? motivoFueraDelControl(CalendarDate fecha, BancoContexto contexto) {
+  final inicio = controlStartFrom(contexto.records);
+  if (inicio == null) {
+    return 'El banco arranca en 0 con tu primera fichada. Fichá al menos una '
+        'vez antes de cargar movimientos.';
+  }
+  if (fecha.isBefore(inicio)) {
+    return 'El control empezó el ${formatDate(inicio)} (tu primera fichada) y '
+        'el saldo arranca en 0 ese día. No se cargan movimientos con fecha '
+        'anterior.';
+  }
+  return null;
+}
+
 /// Valida un movimiento antes de guardarlo. Devuelve el motivo para el
 /// usuario, o `null` si se puede guardar. La usan el repositorio (autoridad)
 /// y la UI (para avisar antes de guardar).
 ///
-/// [original] es el movimiento que se edita (o `null` si es nuevo). Un
-/// usufructo se valida contra el saldo disponible (incluidos los usufructos
-/// ya cargados a futuro) si es nuevo o si cambia la fecha, el tipo o los
-/// minutos; editar solo el documento, el adjunto o la observación no vuelve
-/// a validar el saldo. Un movimiento perdido no computa, así que tampoco se
-/// valida contra el saldo.
+/// [original] es el movimiento que se edita (o `null` si es nuevo).
+/// - "Todo de cero": no se cargan movimientos antes del inicio del control
+///   (ver [motivoFueraDelControl]).
+/// - No se cargan acumulaciones con fecha futura.
+/// - Un usufructo vigente se valida **siempre** contra el saldo disponible
+///   (incluidos los usufructos ya cargados a futuro), también al editar
+///   solo el respaldo; el propio movimiento no se cuenta dos veces. Un
+///   usufructo perdido no computa, así que no se valida contra el saldo.
 String? validarMovimiento({
   required MovimientoDraft draft,
   required BancoContexto contexto,
@@ -197,6 +227,15 @@ String? validarMovimiento({
   final minutos = minutosEfectivos(draft, calc);
   final jornada = calc.workdayMinutesFor(draft.fecha);
 
+  final fueraDelControl = motivoFueraDelControl(draft.fecha, contexto);
+  if (fueraDelControl != null) return fueraDelControl;
+  final hoy = calc.today;
+  if (draft.tipo == TipoMovimiento.acumulacion &&
+      hoy != null &&
+      draft.fecha.isAfter(hoy)) {
+    return 'No se cargan acumulaciones con fecha futura: cargala el día que '
+        'hiciste las horas o después (hoy es ${formatDate(hoy)}).';
+  }
   if (draft.tipo.esUsufructo) {
     final noLaborable = nonWorkingDayFor(draft.fecha, contexto.holidays);
     if (noLaborable != null) {
@@ -234,12 +273,7 @@ String? validarMovimiento({
     return 'El ${formatDate(draft.fecha)} ya tiene un usufructo total.';
   }
 
-  final cambiaSaldo =
-      original == null ||
-      original.kind != draft.tipo ||
-      original.fecha != toIsoDate(draft.fecha) ||
-      original.minutos != minutos;
-  if (!cambiaSaldo) return null;
+  // El saldo se controla siempre (Bruno, 24/09/2026).
   return validarSaldoUsufructo(
     contexto: contexto,
     id: draft.id,
