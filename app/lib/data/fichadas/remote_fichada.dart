@@ -89,9 +89,26 @@ class RemoteFichada {
 
 /// Fila de `public.feriados`.
 class RemoteFeriado {
-  const RemoteFeriado({required this.fecha, required this.nombre});
+  const RemoteFeriado({
+    required this.fecha,
+    required this.nombre,
+    this.tipo = 'inamovible',
+  });
 
   /// `yyyy-MM-dd`.
   final String fecha;
   final String nombre;
+
+  /// `inamovible`, `trasladable` o `no_laborable`.
+  final String tipo;
+}
+
+/// Lo que usa la app de `public.profiles`.
+class RemotePerfil {
+  const RemotePerfil({required this.userId, this.agrupamiento});
+
+  final String userId;
+
+  /// Valor del enum `agrupamiento`, o `null` si no se eligió.
+  final String? agrupamiento;
 }

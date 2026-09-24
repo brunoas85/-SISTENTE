@@ -77,6 +77,21 @@ class FakeFichadasRemote implements FichadasRemote {
   final storage = <String, Uint8List>{};
   final rows = <String, RemoteFichada>{};
   var feriados = <RemoteFeriado>[];
+
+  /// Perfil en el servidor (`null` = sin fila).
+  RemotePerfil? perfil;
+
+  /// Si no es `null`, guardar el agrupamiento se rechaza con este mensaje.
+  String? rejectPerfil;
+
+  /// Simula que el servidor todavía no tiene `profiles.agrupamiento`.
+  bool perfilSinColumna = false;
+
+  /// Agrupamientos guardados, en orden.
+  final perfilSaves = <String?>[];
+
+  /// Cantidad de veces que se bajaron los feriados.
+  int feriadosFetches = 0;
   DateTime serverNow = DateTime.utc(2026, 9, 24, 12);
   DateTime? lastSince;
 
@@ -124,7 +139,29 @@ class FakeFichadasRemote implements FichadasRemote {
   @override
   Future<List<RemoteFeriado>> fetchFeriados() async {
     _checkOnline();
+    feriadosFetches++;
     return feriados;
+  }
+
+  @override
+  Future<RemotePerfil?> fetchPerfil(String userId) async {
+    _checkOnline();
+    if (perfilSinColumna) {
+      throw const RemoteSchemaMissingException('falta la columna (ficticio)');
+    }
+    return perfil;
+  }
+
+  @override
+  Future<void> saveAgrupamiento(String userId, String? agrupamiento) async {
+    _checkOnline();
+    if (perfilSinColumna) {
+      throw const RemoteSchemaMissingException('falta la columna (ficticio)');
+    }
+    perfilSaves.add(agrupamiento);
+    final reject = rejectPerfil;
+    if (reject != null) throw RemoteRejectedException(reject);
+    perfil = RemotePerfil(userId: userId, agrupamiento: agrupamiento);
   }
 
   /// Simula un cambio hecho desde otro dispositivo.

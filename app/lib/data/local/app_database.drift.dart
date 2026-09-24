@@ -1089,8 +1089,18 @@ class $FeriadosTable extends Feriados
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _tipoMeta = const VerificationMeta('tipo');
   @override
-  List<GeneratedColumn> get $columns => [fecha, nombre];
+  late final GeneratedColumn<String> tipo = GeneratedColumn<String>(
+    'tipo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('inamovible'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [fecha, nombre, tipo];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1119,6 +1129,12 @@ class $FeriadosTable extends Feriados
     } else if (isInserting) {
       context.missing(_nombreMeta);
     }
+    if (data.containsKey('tipo')) {
+      context.handle(
+        _tipoMeta,
+        tipo.isAcceptableOrUnknown(data['tipo']!, _tipoMeta),
+      );
+    }
     return context;
   }
 
@@ -1136,6 +1152,10 @@ class $FeriadosTable extends Feriados
         DriftSqlType.string,
         data['${effectivePrefix}nombre'],
       )!,
+      tipo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tipo'],
+      )!,
     );
   }
 
@@ -1148,17 +1168,29 @@ class $FeriadosTable extends Feriados
 class LocalFeriado extends DataClass implements Insertable<LocalFeriado> {
   final String fecha;
   final String nombre;
-  const LocalFeriado({required this.fecha, required this.nombre});
+
+  /// `inamovible`, `trasladable` o `no_laborable` (ver `HolidayKind`).
+  final String tipo;
+  const LocalFeriado({
+    required this.fecha,
+    required this.nombre,
+    required this.tipo,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['fecha'] = Variable<String>(fecha);
     map['nombre'] = Variable<String>(nombre);
+    map['tipo'] = Variable<String>(tipo);
     return map;
   }
 
   FeriadosCompanion toCompanion(bool nullToAbsent) {
-    return FeriadosCompanion(fecha: Value(fecha), nombre: Value(nombre));
+    return FeriadosCompanion(
+      fecha: Value(fecha),
+      nombre: Value(nombre),
+      tipo: Value(tipo),
+    );
   }
 
   factory LocalFeriado.fromJson(
@@ -1169,6 +1201,7 @@ class LocalFeriado extends DataClass implements Insertable<LocalFeriado> {
     return LocalFeriado(
       fecha: serializer.fromJson<String>(json['fecha']),
       nombre: serializer.fromJson<String>(json['nombre']),
+      tipo: serializer.fromJson<String>(json['tipo']),
     );
   }
   @override
@@ -1177,15 +1210,21 @@ class LocalFeriado extends DataClass implements Insertable<LocalFeriado> {
     return <String, dynamic>{
       'fecha': serializer.toJson<String>(fecha),
       'nombre': serializer.toJson<String>(nombre),
+      'tipo': serializer.toJson<String>(tipo),
     };
   }
 
-  LocalFeriado copyWith({String? fecha, String? nombre}) =>
-      LocalFeriado(fecha: fecha ?? this.fecha, nombre: nombre ?? this.nombre);
+  LocalFeriado copyWith({String? fecha, String? nombre, String? tipo}) =>
+      LocalFeriado(
+        fecha: fecha ?? this.fecha,
+        nombre: nombre ?? this.nombre,
+        tipo: tipo ?? this.tipo,
+      );
   LocalFeriado copyWithCompanion(FeriadosCompanion data) {
     return LocalFeriado(
       fecha: data.fecha.present ? data.fecha.value : this.fecha,
       nombre: data.nombre.present ? data.nombre.value : this.nombre,
+      tipo: data.tipo.present ? data.tipo.value : this.tipo,
     );
   }
 
@@ -1193,44 +1232,51 @@ class LocalFeriado extends DataClass implements Insertable<LocalFeriado> {
   String toString() {
     return (StringBuffer('LocalFeriado(')
           ..write('fecha: $fecha, ')
-          ..write('nombre: $nombre')
+          ..write('nombre: $nombre, ')
+          ..write('tipo: $tipo')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(fecha, nombre);
+  int get hashCode => Object.hash(fecha, nombre, tipo);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is LocalFeriado &&
           other.fecha == this.fecha &&
-          other.nombre == this.nombre);
+          other.nombre == this.nombre &&
+          other.tipo == this.tipo);
 }
 
 class FeriadosCompanion extends UpdateCompanion<LocalFeriado> {
   final Value<String> fecha;
   final Value<String> nombre;
+  final Value<String> tipo;
   final Value<int> rowid;
   const FeriadosCompanion({
     this.fecha = const Value.absent(),
     this.nombre = const Value.absent(),
+    this.tipo = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   FeriadosCompanion.insert({
     required String fecha,
     required String nombre,
+    this.tipo = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : fecha = Value(fecha),
        nombre = Value(nombre);
   static Insertable<LocalFeriado> custom({
     Expression<String>? fecha,
     Expression<String>? nombre,
+    Expression<String>? tipo,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (fecha != null) 'fecha': fecha,
       if (nombre != null) 'nombre': nombre,
+      if (tipo != null) 'tipo': tipo,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1238,11 +1284,13 @@ class FeriadosCompanion extends UpdateCompanion<LocalFeriado> {
   FeriadosCompanion copyWith({
     Value<String>? fecha,
     Value<String>? nombre,
+    Value<String>? tipo,
     Value<int>? rowid,
   }) {
     return FeriadosCompanion(
       fecha: fecha ?? this.fecha,
       nombre: nombre ?? this.nombre,
+      tipo: tipo ?? this.tipo,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1256,6 +1304,9 @@ class FeriadosCompanion extends UpdateCompanion<LocalFeriado> {
     if (nombre.present) {
       map['nombre'] = Variable<String>(nombre.value);
     }
+    if (tipo.present) {
+      map['tipo'] = Variable<String>(tipo.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1267,6 +1318,440 @@ class FeriadosCompanion extends UpdateCompanion<LocalFeriado> {
     return (StringBuffer('FeriadosCompanion(')
           ..write('fecha: $fecha, ')
           ..write('nombre: $nombre, ')
+          ..write('tipo: $tipo, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ProfilesTable extends Profiles
+    with TableInfo<$ProfilesTable, LocalProfile> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProfilesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _agrupamientoMeta = const VerificationMeta(
+    'agrupamiento',
+  );
+  @override
+  late final GeneratedColumn<String> agrupamiento = GeneratedColumn<String>(
+    'agrupamiento',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _revisionMeta = const VerificationMeta(
+    'revision',
+  );
+  @override
+  late final GeneratedColumn<int> revision = GeneratedColumn<int>(
+    'revision',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<SyncStatus, String> syncStatus =
+      GeneratedColumn<String>(
+        'sync_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<SyncStatus>($ProfilesTable.$convertersyncStatus);
+  static const VerificationMeta _syncErrorMeta = const VerificationMeta(
+    'syncError',
+  );
+  @override
+  late final GeneratedColumn<String> syncError = GeneratedColumn<String>(
+    'sync_error',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    userId,
+    agrupamiento,
+    updatedAt,
+    revision,
+    syncStatus,
+    syncError,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'profiles';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LocalProfile> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('agrupamiento')) {
+      context.handle(
+        _agrupamientoMeta,
+        agrupamiento.isAcceptableOrUnknown(
+          data['agrupamiento']!,
+          _agrupamientoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('revision')) {
+      context.handle(
+        _revisionMeta,
+        revision.isAcceptableOrUnknown(data['revision']!, _revisionMeta),
+      );
+    }
+    if (data.containsKey('sync_error')) {
+      context.handle(
+        _syncErrorMeta,
+        syncError.isAcceptableOrUnknown(data['sync_error']!, _syncErrorMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {userId};
+  @override
+  LocalProfile map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalProfile(
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      agrupamiento: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}agrupamiento'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      revision: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}revision'],
+      )!,
+      syncStatus: $ProfilesTable.$convertersyncStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}sync_status'],
+        )!,
+      ),
+      syncError: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_error'],
+      ),
+    );
+  }
+
+  @override
+  $ProfilesTable createAlias(String alias) {
+    return $ProfilesTable(attachedDatabase, alias);
+  }
+
+  static JsonTypeConverter2<SyncStatus, String, String> $convertersyncStatus =
+      const EnumNameConverter<SyncStatus>(SyncStatus.values);
+}
+
+class LocalProfile extends DataClass implements Insertable<LocalProfile> {
+  final String userId;
+
+  /// Valor del enum `agrupamiento`, o `null` si no se eligió.
+  final String? agrupamiento;
+  final DateTime updatedAt;
+  final int revision;
+  final SyncStatus syncStatus;
+  final String? syncError;
+  const LocalProfile({
+    required this.userId,
+    this.agrupamiento,
+    required this.updatedAt,
+    required this.revision,
+    required this.syncStatus,
+    this.syncError,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['user_id'] = Variable<String>(userId);
+    if (!nullToAbsent || agrupamiento != null) {
+      map['agrupamiento'] = Variable<String>(agrupamiento);
+    }
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['revision'] = Variable<int>(revision);
+    {
+      map['sync_status'] = Variable<String>(
+        $ProfilesTable.$convertersyncStatus.toSql(syncStatus),
+      );
+    }
+    if (!nullToAbsent || syncError != null) {
+      map['sync_error'] = Variable<String>(syncError);
+    }
+    return map;
+  }
+
+  ProfilesCompanion toCompanion(bool nullToAbsent) {
+    return ProfilesCompanion(
+      userId: Value(userId),
+      agrupamiento: agrupamiento == null && nullToAbsent
+          ? const Value.absent()
+          : Value(agrupamiento),
+      updatedAt: Value(updatedAt),
+      revision: Value(revision),
+      syncStatus: Value(syncStatus),
+      syncError: syncError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncError),
+    );
+  }
+
+  factory LocalProfile.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalProfile(
+      userId: serializer.fromJson<String>(json['userId']),
+      agrupamiento: serializer.fromJson<String?>(json['agrupamiento']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      revision: serializer.fromJson<int>(json['revision']),
+      syncStatus: $ProfilesTable.$convertersyncStatus.fromJson(
+        serializer.fromJson<String>(json['syncStatus']),
+      ),
+      syncError: serializer.fromJson<String?>(json['syncError']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'userId': serializer.toJson<String>(userId),
+      'agrupamiento': serializer.toJson<String?>(agrupamiento),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'revision': serializer.toJson<int>(revision),
+      'syncStatus': serializer.toJson<String>(
+        $ProfilesTable.$convertersyncStatus.toJson(syncStatus),
+      ),
+      'syncError': serializer.toJson<String?>(syncError),
+    };
+  }
+
+  LocalProfile copyWith({
+    String? userId,
+    Value<String?> agrupamiento = const Value.absent(),
+    DateTime? updatedAt,
+    int? revision,
+    SyncStatus? syncStatus,
+    Value<String?> syncError = const Value.absent(),
+  }) => LocalProfile(
+    userId: userId ?? this.userId,
+    agrupamiento: agrupamiento.present ? agrupamiento.value : this.agrupamiento,
+    updatedAt: updatedAt ?? this.updatedAt,
+    revision: revision ?? this.revision,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncError: syncError.present ? syncError.value : this.syncError,
+  );
+  LocalProfile copyWithCompanion(ProfilesCompanion data) {
+    return LocalProfile(
+      userId: data.userId.present ? data.userId.value : this.userId,
+      agrupamiento: data.agrupamiento.present
+          ? data.agrupamiento.value
+          : this.agrupamiento,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      revision: data.revision.present ? data.revision.value : this.revision,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncError: data.syncError.present ? data.syncError.value : this.syncError,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalProfile(')
+          ..write('userId: $userId, ')
+          ..write('agrupamiento: $agrupamiento, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('revision: $revision, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncError: $syncError')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    userId,
+    agrupamiento,
+    updatedAt,
+    revision,
+    syncStatus,
+    syncError,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalProfile &&
+          other.userId == this.userId &&
+          other.agrupamiento == this.agrupamiento &&
+          other.updatedAt == this.updatedAt &&
+          other.revision == this.revision &&
+          other.syncStatus == this.syncStatus &&
+          other.syncError == this.syncError);
+}
+
+class ProfilesCompanion extends UpdateCompanion<LocalProfile> {
+  final Value<String> userId;
+  final Value<String?> agrupamiento;
+  final Value<DateTime> updatedAt;
+  final Value<int> revision;
+  final Value<SyncStatus> syncStatus;
+  final Value<String?> syncError;
+  final Value<int> rowid;
+  const ProfilesCompanion({
+    this.userId = const Value.absent(),
+    this.agrupamiento = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.revision = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncError = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ProfilesCompanion.insert({
+    required String userId,
+    this.agrupamiento = const Value.absent(),
+    required DateTime updatedAt,
+    this.revision = const Value.absent(),
+    required SyncStatus syncStatus,
+    this.syncError = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : userId = Value(userId),
+       updatedAt = Value(updatedAt),
+       syncStatus = Value(syncStatus);
+  static Insertable<LocalProfile> custom({
+    Expression<String>? userId,
+    Expression<String>? agrupamiento,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? revision,
+    Expression<String>? syncStatus,
+    Expression<String>? syncError,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (userId != null) 'user_id': userId,
+      if (agrupamiento != null) 'agrupamiento': agrupamiento,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (revision != null) 'revision': revision,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncError != null) 'sync_error': syncError,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ProfilesCompanion copyWith({
+    Value<String>? userId,
+    Value<String?>? agrupamiento,
+    Value<DateTime>? updatedAt,
+    Value<int>? revision,
+    Value<SyncStatus>? syncStatus,
+    Value<String?>? syncError,
+    Value<int>? rowid,
+  }) {
+    return ProfilesCompanion(
+      userId: userId ?? this.userId,
+      agrupamiento: agrupamiento ?? this.agrupamiento,
+      updatedAt: updatedAt ?? this.updatedAt,
+      revision: revision ?? this.revision,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncError: syncError ?? this.syncError,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (agrupamiento.present) {
+      map['agrupamiento'] = Variable<String>(agrupamiento.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (revision.present) {
+      map['revision'] = Variable<int>(revision.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(
+        $ProfilesTable.$convertersyncStatus.toSql(syncStatus.value),
+      );
+    }
+    if (syncError.present) {
+      map['sync_error'] = Variable<String>(syncError.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProfilesCompanion(')
+          ..write('userId: $userId, ')
+          ..write('agrupamiento: $agrupamiento, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('revision: $revision, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncError: $syncError, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1694,6 +2179,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $FichadasTable fichadas = $FichadasTable(this);
   late final $FeriadosTable feriados = $FeriadosTable(this);
+  late final $ProfilesTable profiles = $ProfilesTable(this);
   late final $SyncStateTable syncState = $SyncStateTable(this);
   late final $LocalPhotosTable localPhotos = $LocalPhotosTable(this);
   @override
@@ -1703,6 +2189,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     fichadas,
     feriados,
+    profiles,
     syncState,
     localPhotos,
   ];
@@ -2185,11 +2672,13 @@ typedef $$FichadasTableProcessedTableManager =
 typedef $$FeriadosTableCreateCompanionBuilder = FeriadosCompanion Function({
   required String fecha,
   required String nombre,
+  Value<String> tipo,
   Value<int> rowid,
 });
 typedef $$FeriadosTableUpdateCompanionBuilder = FeriadosCompanion Function({
   Value<String> fecha,
   Value<String> nombre,
+  Value<String> tipo,
   Value<int> rowid,
 });
 
@@ -2209,6 +2698,11 @@ class $$FeriadosTableFilterComposer
 
   ColumnFilters<String> get nombre => $composableBuilder(
     column: $table.nombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipo => $composableBuilder(
+    column: $table.tipo,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2231,6 +2725,11 @@ class $$FeriadosTableOrderingComposer
     column: $table.nombre,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$FeriadosTableAnnotationComposer
@@ -2247,6 +2746,9 @@ class $$FeriadosTableAnnotationComposer
 
   GeneratedColumn<String> get nombre =>
       $composableBuilder(column: $table.nombre, builder: (column) => column);
+
+  GeneratedColumn<String> get tipo =>
+      $composableBuilder(column: $table.tipo, builder: (column) => column);
 }
 
 class $$FeriadosTableTableManager
@@ -2278,19 +2780,28 @@ class $$FeriadosTableTableManager
               $$FeriadosTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$FeriadosTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> fecha = const Value.absent(),
-            Value<String> nombre = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) => FeriadosCompanion(fecha: fecha, nombre: nombre, rowid: rowid),
+          updateCompanionCallback:
+              ({
+                Value<String> fecha = const Value.absent(),
+                Value<String> nombre = const Value.absent(),
+                Value<String> tipo = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => FeriadosCompanion(
+                fecha: fecha,
+                nombre: nombre,
+                tipo: tipo,
+                rowid: rowid,
+              ),
           createCompanionCallback:
               ({
                 required String fecha,
                 required String nombre,
+                Value<String> tipo = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FeriadosCompanion.insert(
                 fecha: fecha,
                 nombre: nombre,
+                tipo: tipo,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -2325,6 +2836,238 @@ typedef $$FeriadosTableProcessedTableManager =
         BaseReferences<_$AppDatabase, $FeriadosTable, LocalFeriado>,
       ),
       LocalFeriado,
+      PrefetchHooks Function()
+    >;
+typedef $$ProfilesTableCreateCompanionBuilder = ProfilesCompanion Function({
+  required String userId,
+  Value<String?> agrupamiento,
+  required DateTime updatedAt,
+  Value<int> revision,
+  required SyncStatus syncStatus,
+  Value<String?> syncError,
+  Value<int> rowid,
+});
+typedef $$ProfilesTableUpdateCompanionBuilder = ProfilesCompanion Function({
+  Value<String> userId,
+  Value<String?> agrupamiento,
+  Value<DateTime> updatedAt,
+  Value<int> revision,
+  Value<SyncStatus> syncStatus,
+  Value<String?> syncError,
+  Value<int> rowid,
+});
+
+class $$ProfilesTableFilterComposer
+    extends Composer<_$AppDatabase, $ProfilesTable> {
+  $$ProfilesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get agrupamiento => $composableBuilder(
+    column: $table.agrupamiento,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get revision => $composableBuilder(
+    column: $table.revision,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<SyncStatus, SyncStatus, String>
+  get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<String> get syncError => $composableBuilder(
+    column: $table.syncError,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ProfilesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ProfilesTable> {
+  $$ProfilesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get agrupamiento => $composableBuilder(
+    column: $table.agrupamiento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get revision => $composableBuilder(
+    column: $table.revision,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncError => $composableBuilder(
+    column: $table.syncError,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ProfilesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ProfilesTable> {
+  $$ProfilesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get agrupamiento => $composableBuilder(
+    column: $table.agrupamiento,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get revision =>
+      $composableBuilder(column: $table.revision, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<SyncStatus, String> get syncStatus =>
+      $composableBuilder(
+        column: $table.syncStatus,
+        builder: (column) => column,
+      );
+
+  GeneratedColumn<String> get syncError =>
+      $composableBuilder(column: $table.syncError, builder: (column) => column);
+}
+
+class $$ProfilesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ProfilesTable,
+          LocalProfile,
+          $$ProfilesTableFilterComposer,
+          $$ProfilesTableOrderingComposer,
+          $$ProfilesTableAnnotationComposer,
+          $$ProfilesTableCreateCompanionBuilder,
+          $$ProfilesTableUpdateCompanionBuilder,
+          (
+            LocalProfile,
+            BaseReferences<_$AppDatabase, $ProfilesTable, LocalProfile>,
+          ),
+          LocalProfile,
+          PrefetchHooks Function()
+        > {
+  $$ProfilesTableTableManager(_$AppDatabase db, $ProfilesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProfilesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProfilesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ProfilesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> userId = const Value.absent(),
+                Value<String?> agrupamiento = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> revision = const Value.absent(),
+                Value<SyncStatus> syncStatus = const Value.absent(),
+                Value<String?> syncError = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ProfilesCompanion(
+                userId: userId,
+                agrupamiento: agrupamiento,
+                updatedAt: updatedAt,
+                revision: revision,
+                syncStatus: syncStatus,
+                syncError: syncError,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String userId,
+                Value<String?> agrupamiento = const Value.absent(),
+                required DateTime updatedAt,
+                Value<int> revision = const Value.absent(),
+                required SyncStatus syncStatus,
+                Value<String?> syncError = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ProfilesCompanion.insert(
+                userId: userId,
+                agrupamiento: agrupamiento,
+                updatedAt: updatedAt,
+                revision: revision,
+                syncStatus: syncStatus,
+                syncError: syncError,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ProfilesTable, LocalProfile>(table),
+                  BaseReferences<_$AppDatabase, $ProfilesTable, LocalProfile>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ProfilesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ProfilesTable,
+      LocalProfile,
+      $$ProfilesTableFilterComposer,
+      $$ProfilesTableOrderingComposer,
+      $$ProfilesTableAnnotationComposer,
+      $$ProfilesTableCreateCompanionBuilder,
+      $$ProfilesTableUpdateCompanionBuilder,
+      (
+        LocalProfile,
+        BaseReferences<_$AppDatabase, $ProfilesTable, LocalProfile>,
+      ),
+      LocalProfile,
       PrefetchHooks Function()
     >;
 typedef $$SyncStateTableCreateCompanionBuilder = SyncStateCompanion Function({
@@ -2622,6 +3365,8 @@ class $AppDatabaseManager {
       $$FichadasTableTableManager(_db, _db.fichadas);
   $$FeriadosTableTableManager get feriados =>
       $$FeriadosTableTableManager(_db, _db.feriados);
+  $$ProfilesTableTableManager get profiles =>
+      $$ProfilesTableTableManager(_db, _db.profiles);
   $$SyncStateTableTableManager get syncState =>
       $$SyncStateTableTableManager(_db, _db.syncState);
   $$LocalPhotosTableTableManager get localPhotos =>

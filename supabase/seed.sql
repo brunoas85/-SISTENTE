@@ -39,15 +39,20 @@ values
    '{"sub":"00000000-0000-4000-8000-000000000002","email":"otro@example.com","email_verified":true}',
    'email', now(), now(), now());
 
-update public.profiles set legajo = '000000' where user_id = '00000000-0000-4000-8000-000000000001';
-update public.profiles set legajo = '999999' where user_id = '00000000-0000-4000-8000-000000000002';
+-- demo: guardaparque (420 min por agrupamiento).
+-- otro: sin agrupamiento todavía (cae en profiles.jornada_min = 480).
+update public.profiles set legajo = '000000', agrupamiento = 'guardaparque'
+ where user_id = '00000000-0000-4000-8000-000000000001';
+update public.profiles set legajo = '999999'
+ where user_id = '00000000-0000-4000-8000-000000000002';
 
 -- -----------------------------------------------------------------------------
--- Jornadas: 480 min hasta agosto, 420 min desde septiembre (para probar vigencias)
+-- Jornadas: una vigencia de 480 min hasta agosto (tiene prioridad sobre el
+-- agrupamiento). Desde septiembre no hay vigencia y rige el agrupamiento
+-- guardaparque (420 min). Sirve para probar el orden de prioridad.
 -- -----------------------------------------------------------------------------
 insert into public.jornadas (user_id, desde, hasta, minutos, observacion) values
-  ('00000000-0000-4000-8000-000000000001', '2026-01-01', '2026-08-31', 480, 'Jornada de ejemplo'),
-  ('00000000-0000-4000-8000-000000000001', '2026-09-01', null,         420, 'Jornada reducida de ejemplo');
+  ('00000000-0000-4000-8000-000000000001', '2026-01-01', '2026-08-31', 480, 'Vigencia de ejemplo (8 h)');
 
 -- -----------------------------------------------------------------------------
 -- Tipos de documento GDE de ejemplo (el catálogo es editable por el usuario)
@@ -69,7 +74,7 @@ values
   ('00000000-0000-4000-8000-000000000001', '2026-08-05', 500, 900,  null, null, false, 'Deuda 80 min'),
   ('00000000-0000-4000-8000-000000000001', '2026-08-06', 485, null, null, null, false, 'Egreso vacío: abierta, no computa'),
   ('00000000-0000-4000-8000-000000000001', '2026-08-07', 480, 780,  null, null, false, 'Salida temprana cubierta por usufructo parcial'),
-  -- septiembre (jornada 420)
+  -- septiembre (jornada 420 por agrupamiento guardaparque)
   ('00000000-0000-4000-8000-000000000001', '2026-09-01', 480, 900,  null, null, false, 'Jornada exacta 420'),
   ('00000000-0000-4000-8000-000000000001', '2026-09-02', 475, 900,  482,  null, true,  'Ingreso corregido a mano'),
   -- otro usuario (para probar RLS)
@@ -104,27 +109,5 @@ values
   ('00000000-0000-4000-8000-000000000001', 'Curso ficticio con cupo lleno', 'IN-A0-00004', 'INAP',     '2026-10-05', null,         4,  'no_aceptado', null),
   ('00000000-0000-4000-8000-000000000002', 'Curso del otro usuario',        'IN-A0-00005', 'INAP',     '2026-03-02', '2026-04-10', 3,  'aprobado',    null);
 
--- -----------------------------------------------------------------------------
--- Feriados nacionales 2026 (datos públicos, no personales).
--- VERIFICAR contra el decreto oficial antes de usarlos en producción:
--- los trasladables ya están movidos según la ley 27.399 y no se incluyen
--- los días no laborables con fines turísticos.
--- -----------------------------------------------------------------------------
-insert into public.feriados (fecha, nombre, tipo) values
-  ('2026-01-01', 'Año Nuevo', 'inamovible'),
-  ('2026-02-16', 'Carnaval', 'inamovible'),
-  ('2026-02-17', 'Carnaval', 'inamovible'),
-  ('2026-03-24', 'Día Nacional de la Memoria por la Verdad y la Justicia', 'inamovible'),
-  ('2026-04-02', 'Día del Veterano y de los Caídos en la Guerra de Malvinas', 'inamovible'),
-  ('2026-04-03', 'Viernes Santo', 'inamovible'),
-  ('2026-05-01', 'Día del Trabajador', 'inamovible'),
-  ('2026-05-25', 'Día de la Revolución de Mayo', 'inamovible'),
-  ('2026-06-15', 'Paso a la Inmortalidad del Gral. Martín Miguel de Güemes', 'trasladable'),
-  ('2026-06-20', 'Paso a la Inmortalidad del Gral. Manuel Belgrano', 'inamovible'),
-  ('2026-07-09', 'Día de la Independencia', 'inamovible'),
-  ('2026-08-17', 'Paso a la Inmortalidad del Gral. José de San Martín', 'trasladable'),
-  ('2026-10-12', 'Día del Respeto a la Diversidad Cultural', 'trasladable'),
-  ('2026-11-23', 'Día de la Soberanía Nacional', 'trasladable'),
-  ('2026-12-08', 'Inmaculada Concepción de María', 'inamovible'),
-  ('2026-12-25', 'Navidad', 'inamovible')
-on conflict (fecha) do nothing;
+-- Los feriados nacionales 2026 vienen de la migración
+-- 20260924141358_agrupamiento_y_feriados_2026.sql (no se duplican acá).

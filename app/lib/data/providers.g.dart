@@ -273,6 +273,52 @@ final class FichadasRepositoryProvider
 String _$fichadasRepositoryHash() =>
     r'a7ed1c421ca6f3202bf2afa218daabc6de799d44';
 
+@ProviderFor(perfilRepository)
+final perfilRepositoryProvider = PerfilRepositoryProvider._();
+
+final class PerfilRepositoryProvider
+    extends
+        $FunctionalProvider<
+          PerfilRepository,
+          PerfilRepository,
+          PerfilRepository
+        >
+    with $Provider<PerfilRepository> {
+  PerfilRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'perfilRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$perfilRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<PerfilRepository> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  PerfilRepository create(Ref ref) {
+    return perfilRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(PerfilRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<PerfilRepository>(value),
+    );
+  }
+}
+
+String _$perfilRepositoryHash() => r'cf73956394e982e80e0c747c32900f1a510db114';
+
 @ProviderFor(fichadasRemote)
 final fichadasRemoteProvider = FichadasRemoteProvider._();
 
@@ -353,7 +399,7 @@ final class SyncServiceProvider
   }
 }
 
-String _$syncServiceHash() => r'f13b1506a1374150a99483423e77d9a0efdbe358';
+String _$syncServiceHash() => r'f9c704c36071fbd387d1d26fdb2989450fa4e3d2';
 
 /// `true` si el dispositivo tiene alguna red (no garantiza internet).
 

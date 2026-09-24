@@ -45,3 +45,34 @@ CalendarDate parseIsoDate(String iso) {
     int.parse(parts[2].substring(0, 2)),
   );
 }
+
+const _diasSemana = [
+  'lunes',
+  'martes',
+  'miércoles',
+  'jueves',
+  'viernes',
+  'sábado',
+  'domingo',
+];
+
+const _meses = [
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
+];
+
+/// Día de la semana en español: `sábado`. No necesita los datos de `intl`.
+String nombreDiaSemana(CalendarDate date) => _diasSemana[date.weekday - 1];
+
+/// Nombre del mes en español (`1 → enero`).
+String nombreMes(int month) => _meses[month - 1];

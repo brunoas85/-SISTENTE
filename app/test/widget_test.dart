@@ -44,7 +44,14 @@ void main() {
     await tester.tap(find.byKey(const Key('login-submit')));
     await tester.pumpAndSettle();
 
+    // Primera vez: pide el agrupamiento (una sola vez) y después va a Fichar.
+    expect(find.byKey(const Key('elegir-agrupamiento')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('agrupamiento-guardaparque')));
+    await tester.pumpAndSettle();
+
     expect(find.text('Fichar ingreso'), findsOneWidget);
+    expect(find.text('Jornada: 7:00 · Guardaparque'), findsOneWidget);
+    expect(find.byKey(const Key('nav-bar')), findsOneWidget);
 
     await disposeTestApp(tester, deps);
   });

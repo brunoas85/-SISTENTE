@@ -40,6 +40,9 @@ void main() {
     expect(find.byKey(const Key('sin-tramos')), findsOneWidget);
     expect(find.text('Sin fichadas'), findsOneWidget);
     expect(find.text('Fichar ingreso'), findsOneWidget);
+    // Sin agrupamiento elegido la jornada es de 8 h.
+    expect(find.text('Jornada: 8:00'), findsOneWidget);
+    expect(find.byKey(const Key('aviso-no-laborable')), findsNothing);
     expect(find.byKey(const Key('saldo')), findsOneWidget);
     // El botón principal es grande (táctil ≥ 48 dp de sobra).
     expect(
@@ -258,6 +261,132 @@ void main() {
     expect(find.byKey(const Key('error-fichadas')), findsOneWidget);
     expect(find.text('Reintentar'), findsOneWidget);
     expect(find.text('Fichar ingreso'), findsNothing);
+
+    await disposeTestApp(tester, deps);
+  });
+
+  group('días no laborables', () {
+    testWidgets('sábado: el botón está deshabilitado y explica por qué', (
+      tester,
+    ) async {
+      final deps = TestDeps(now: DateTime(2026, 9, 26, 9)); // sábado
+      await pumpFichar(tester, deps: deps);
+
+      expect(find.text('Hoy es sábado: no es día laborable'), findsOneWidget);
+      final boton = find.byKey(const Key('boton-fichar'));
+      expect(tester.widget<ButtonStyleButton>(boton).onPressed, isNull);
+      await tester.tap(boton, warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(find.text('Confirmar ingreso'), findsNothing);
+
+      await disposeTestApp(tester, deps);
+    });
+
+    testWidgets('feriado: muestra el nombre y no deja fichar', (tester) async {
+      final deps = TestDeps(now: DateTime(2026, 10, 12, 9)); // lunes
+      await deps.db
+          .into(deps.db.feriados)
+          .insert(
+            FeriadosCompanion.insert(
+              fecha: '2026-10-12',
+              nombre: 'Feriado ficticio',
+              tipo: const Value('trasladable'),
+            ),
+          );
+      await pumpFichar(tester, deps: deps);
+
+      expect(find.text('Hoy es feriado: Feriado ficticio'), findsOneWidget);
+      expect(
+        tester
+            .widget<ButtonStyleButton>(find.byKey(const Key('boton-fichar')))
+            .onPressed,
+        isNull,
+      );
+
+      await disposeTestApp(tester, deps);
+    });
+
+    testWidgets('no laborable turístico: tampoco deja fichar', (tester) async {
+      final deps = TestDeps(now: DateTime(2026, 10, 13, 9)); // martes
+      await deps.db
+          .into(deps.db.feriados)
+          .insert(
+            FeriadosCompanion.insert(
+              fecha: '2026-10-13',
+              nombre: 'Puente ficticio',
+              tipo: const Value('no_laborable'),
+            ),
+          );
+      await pumpFichar(tester, deps: deps);
+
+      expect(
+        find.text('Hoy es día no laborable: Puente ficticio'),
+        findsOneWidget,
+      );
+
+      await disposeTestApp(tester, deps);
+    });
+
+    testWidgets('un sábado se puede cerrar el tramo abierto del viernes', (
+      tester,
+    ) async {
+      final deps = TestDeps(now: DateTime(2026, 9, 26, 9));
+      await insertar(deps, id: 'viernes', fecha: '2026-09-25', ingreso: 480);
+      await pumpFichar(tester, deps: deps);
+
+      expect(find.byKey(const Key('aviso-no-laborable')), findsNothing);
+      final boton = find.byKey(const Key('boton-fichar'));
+      expect(tester.widget<ButtonStyleButton>(boton).onPressed, isNotNull);
+      expect(find.text('Cerrar tramo del 25/09/2026'), findsOneWidget);
+
+      await tester.tap(boton);
+      await tester.pumpAndSettle();
+      expect(find.text('Confirmar egreso'), findsWidgets);
+
+      await disposeTestApp(tester, deps);
+    });
+  });
+
+  testWidgets('guardaparque: "faltan" y el a favor usan la jornada de 7 h', (
+    tester,
+  ) async {
+    final deps = TestDeps(now: DateTime(2026, 9, 24, 13));
+    await deps.db
+        .into(deps.db.profiles)
+        .insert(
+          ProfilesCompanion.insert(
+            userId: fakeUserId,
+            agrupamiento: const Value('guardaparque'),
+            updatedAt: DateTime(2026, 9, 23),
+            syncStatus: SyncStatus.synced,
+          ),
+        );
+    // Ayer: 08:00–15:30 (7:30 → 0:30 a favor). Hoy: 08:00–12:00.
+    await insertar(
+      deps,
+      id: 'ayer',
+      fecha: '2026-09-23',
+      ingreso: 480,
+      egreso: 930,
+    );
+    await insertar(
+      deps,
+      id: 'hoy',
+      fecha: '2026-09-24',
+      ingreso: 480,
+      egreso: 720,
+    );
+    await pumpFichar(tester, deps: deps);
+
+    expect(find.text('Jornada: 7:00 · Guardaparque'), findsOneWidget);
+    expect(find.text('Trabajado hoy: 4:00 · faltan 3:00'), findsOneWidget);
+    expect(
+      tester
+          .widget<Text>(find.byKey(const Key('saldo')))
+          .textSpan!
+          .toPlainText(),
+      'Banco · mes 0:30 · total 0:30',
+    );
 
     await disposeTestApp(tester, deps);
   });

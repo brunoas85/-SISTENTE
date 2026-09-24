@@ -7,6 +7,21 @@ String describirTramo(int ingresoMin, int? egresoMin) =>
     '${formatClock(ingresoMin)}–'
     '${egresoMin == null ? 'abierto' : formatClock(egresoMin)}';
 
+/// Motivo (sin punto final) por el que no se puede fichar en un día no
+/// laborable: "Hoy es feriado: Día ficticio", "Hoy es sábado: no es día
+/// laborable", "El 12/10/2026 es día no laborable: …".
+String motivoDiaNoLaborable(NonWorkingDay dia, {required bool esHoy}) {
+  final sujeto = esHoy ? 'Hoy' : 'El ${formatDate(dia.date)}';
+  final h = dia.holiday;
+  if (h != null) {
+    final que = h.kind == HolidayKind.nonWorking
+        ? 'día no laborable'
+        : 'feriado';
+    return h.name.isEmpty ? '$sujeto es $que' : '$sujeto es $que: ${h.name}';
+  }
+  return '$sujeto es ${nombreDiaSemana(dia.date)}: no es día laborable';
+}
+
 /// Valida un tramo nuevo o que se cierra contra los otros del mismo día.
 ///
 /// Devuelve el motivo para mostrar al usuario, o `null` si es válido. La

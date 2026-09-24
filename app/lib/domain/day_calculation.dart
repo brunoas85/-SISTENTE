@@ -1,3 +1,4 @@
+import 'agrupamiento.dart';
 import 'calendar_date.dart';
 import 'models.dart';
 import 'workday_schedule.dart';
@@ -5,14 +6,16 @@ import 'workday_schedule.dart';
 /// Estado único de un día. Un día tiene un solo estado: nunca es a la vez
 /// deuda y usufructo.
 enum DayStatus {
-  /// Tiene uno o más tramos completos que no se superponen: computa la suma
-  /// de los tramos.
-  ///
-  /// - En día hábil: deuda y a favor contra la jornada. La deuda puede estar
-  ///   cubierta (total o parcialmente) por un usufructo vigente.
-  /// - En fin de semana o feriado ([DayResult.isBusinessDay] es `false`):
-  ///   todo lo trabajado es a favor y no hay deuda.
+  /// Día hábil con uno o más tramos completos que no se superponen: computa
+  /// la suma de los tramos. Deuda y a favor contra la jornada; la deuda
+  /// puede estar cubierta (total o parcialmente) por un usufructo vigente.
   worked,
+
+  /// Fin de semana, feriado o no laborable turístico con fichadas (por
+  /// ejemplo, importadas). Esos días no se ficha: las fichadas no computan
+  /// (ni a favor ni deuda) y el día queda para revisar. Las horas de un
+  /// sábado se cargan como acumulación manual.
+  nonWorkingDayRecords,
 
   /// Algún tramo no tiene egreso. No computa.
   open,
@@ -90,8 +93,8 @@ class DayResult {
   /// [DayStatus.usufruct] no tiene deuda.
   final int debtMinutes;
 
-  /// A favor del día: `max(trabajado - jornada, 0)` en día hábil, o todo lo
-  /// trabajado en fin de semana/feriado.
+  /// A favor del día: `max(trabajado - jornada, 0)` en día hábil. Las
+  /// fichadas de un día no laborable no generan a favor.
   final int creditMinutes;
 
   /// Parte de la deuda cubierta por usufructos vigentes del día.
@@ -129,11 +132,12 @@ class DayResult {
       uncoveredDebtMinutes -
       activeUsufructMinutes;
 
-  /// El día necesita revisión manual: tramos superpuestos o inválidos, un
-  /// usufructo total distinto de la jornada, o un día sin fichada cubierto
-  /// solo en parte por usufructos.
+  /// El día necesita revisión manual: tramos superpuestos o inválidos,
+  /// fichadas en un día no laborable, un usufructo total distinto de la
+  /// jornada, o un día sin fichada cubierto solo en parte por usufructos.
   bool get needsReview =>
       status == DayStatus.conflict ||
+      status == DayStatus.nonWorkingDayRecords ||
       status == DayStatus.invalid ||
       fullUsufructMismatch ||
       (status == DayStatus.missing && coveredDebtMinutes > 0);
@@ -192,14 +196,19 @@ CalendarDate? controlStartFrom(Iterable<DailyRecord> records) {
 }
 
 class DayCalculator {
+  /// La jornada de cada día sale de [schedules] (vigencias de `jornadas`);
+  /// sin vigencia, del [agrupamiento] (8 h o 7 h) o, si no hay, 480 min.
+  /// [defaultWorkdayMinutes], si se indica, reemplaza al del agrupamiento.
   DayCalculator({
     Iterable<WorkdaySchedule> schedules = const [],
     Iterable<Holiday> holidays = const [],
     this.today,
     this.controlStart,
-    int defaultWorkdayMinutes = defaultWorkdayMinutes,
+    Agrupamiento? agrupamiento,
+    int? defaultWorkdayMinutes,
   }) : _schedules = WorkdayScheduleResolver(
          schedules,
+         agrupamiento: agrupamiento,
          defaultMinutes: defaultWorkdayMinutes,
        ),
        _holidays = {for (final h in holidays) h.date};
@@ -289,6 +298,9 @@ class DayCalculator {
     final isToday = today != null && date == today;
 
     if (dayRecords.isNotEmpty) {
+      // Día no laborable: no se ficha. Si llegan fichadas (importadas, de
+      // otra versión), no computan y quedan para revisar.
+      if (!business) return result(DayStatus.nonWorkingDayRecords);
       final complete = dayRecords.where((r) => !r.isOpen);
       if (complete.any((r) => workedMinutesOf(r) == null)) {
         return result(DayStatus.invalid);
@@ -297,10 +309,7 @@ class DayCalculator {
       if (dayRecords.any((r) => r.isOpen)) return result(DayStatus.open);
 
       final worked = dayRecords.fold(0, (sum, r) => sum + workedMinutesOf(r)!);
-      if (!business) {
-        // Fin de semana o feriado: todo suma al banco.
-        return result(DayStatus.worked, worked: worked, credit: worked);
-      }
+      // A favor: solo lo que excede la jornada, al minuto.
       final debt = workday > worked ? workday - worked : 0;
       return result(
         DayStatus.worked,

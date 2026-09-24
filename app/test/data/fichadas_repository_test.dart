@@ -79,6 +79,117 @@ void main() {
     });
   });
 
+  group('días no laborables', () {
+    // 26/09/2026 es sábado; el 12/10/2026 se carga como feriado ficticio.
+    final sabado = CalendarDate(2026, 9, 26);
+    final feriado = CalendarDate(2026, 10, 12);
+
+    Future<void> cargarFeriados() => repo.replaceHolidays(const [
+      RemoteFeriado(fecha: '2026-10-12', nombre: 'Feriado ficticio'),
+      RemoteFeriado(
+        fecha: '2026-10-13',
+        nombre: 'Puente ficticio',
+        tipo: 'no_laborable',
+      ),
+    ]);
+
+    Future<LocalFichada> ingresoEl(CalendarDate date) => repo.ficharIngreso(
+      userId: fakeUserId,
+      date: date,
+      proposedMin: 480,
+      chosenMin: 480,
+    );
+
+    test('no se puede fichar ingreso un sábado', () async {
+      await expectLater(
+        ingresoEl(sabado),
+        throwsA(
+          isA<FichadaInvalidaException>().having(
+            (e) => e.message,
+            'message',
+            'El 26/09/2026 es sábado: no es día laborable. '
+                'No se puede fichar.',
+          ),
+        ),
+      );
+      expect(await repo.watchAll(fakeUserId).first, isEmpty);
+    });
+
+    test('no se puede fichar ingreso en un feriado', () async {
+      await cargarFeriados();
+      await expectLater(
+        ingresoEl(feriado),
+        throwsA(
+          isA<FichadaInvalidaException>().having(
+            (e) => e.message,
+            'message',
+            contains('es feriado: Feriado ficticio'),
+          ),
+        ),
+      );
+    });
+
+    test('ni en un no laborable turístico', () async {
+      await cargarFeriados();
+      await expectLater(
+        ingresoEl(CalendarDate(2026, 10, 13)),
+        throwsA(
+          isA<FichadaInvalidaException>().having(
+            (e) => e.message,
+            'message',
+            contains('es día no laborable: Puente ficticio'),
+          ),
+        ),
+      );
+    });
+
+    test('hoy (según el reloj) se informa como "Hoy es …"', () async {
+      final r = FichadasRepository(
+        db,
+        photos,
+        clock: () => DateTime(2026, 9, 26, 9),
+      );
+      await expectLater(
+        r.ficharIngreso(
+          userId: fakeUserId,
+          date: sabado,
+          proposedMin: 540,
+          chosenMin: 540,
+        ),
+        throwsA(
+          isA<FichadaInvalidaException>().having(
+            (e) => e.message,
+            'message',
+            startsWith('Hoy es sábado'),
+          ),
+        ),
+      );
+    });
+
+    test(
+      'un día hábil se puede fichar aunque haya feriados cargados',
+      () async {
+        await cargarFeriados();
+        final f = await ingresoEl(hoy);
+        expect(f.isOpen, isTrue);
+      },
+    );
+
+    test(
+      'cerrar un tramo abierto de un día hábil anterior sigue permitido',
+      () async {
+        final viernes = await ingresoEl(CalendarDate(2026, 9, 25));
+        final f = await repo.ficharEgreso(
+          userId: fakeUserId,
+          fichadaId: viernes.id,
+          proposedMin: null,
+          chosenMin: 960,
+        );
+        expect(f.egresoMin, 960);
+      },
+    );
+  });
+
   group('ficharEgreso', () {
     test('cierra el tramo, sube la revisión y queda pendiente', () async {
       final abierto = await ingreso();

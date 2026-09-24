@@ -2,6 +2,7 @@ import '../../domain/domain.dart';
 import '../fichadas/fichadas_repository.dart';
 import '../fichadas/remote_fichada.dart';
 import '../local/app_database.dart';
+import '../perfil/perfil_repository.dart';
 import 'fichadas_remote.dart';
 
 /// Ruta de la foto en el bucket `comprobantes`:
@@ -46,27 +47,31 @@ class SyncResult {
 /// 1. Sube las filas pendientes o con error: primero las fotos y después el
 ///    upsert de la fila (gana el último que sincroniza).
 /// 2. Baja los cambios del servidor sin pisar lo que falta subir.
-/// 3. Actualiza los feriados cada tanto.
+/// 3. Actualiza los feriados cada tanto (o ya, si no hay ninguno guardado).
+/// 4. Sube el agrupamiento elegido y baja el perfil.
 ///
 /// Si no hay red corta sin marcar errores: las filas quedan pendientes.
 class SyncService {
   SyncService({
     required FichadasRepository repository,
+    required PerfilRepository perfiles,
     required FichadasRemote remote,
     DateTime Function()? clock,
     this.holidaysRefreshEvery = const Duration(hours: 12),
   }) : _repo = repository,
+       _perfilRepo = perfiles,
        _api = remote,
        _clock = clock ?? DateTime.now;
 
   final FichadasRepository _repo;
+  final PerfilRepository _perfilRepo;
   final FichadasRemote _api;
   final DateTime Function() _clock;
   final Duration holidaysRefreshEvery;
 
   /// Cursor de la última descarga, por usuario.
   static String pulledAtKey(String userId) => 'fichadas_pulled_at:$userId';
-  static const holidaysAtKey = 'feriados_pulled_at';
+  static const holidaysAtKey = AppDatabase.holidaysPulledAtKey;
 
   Future<SyncResult>? _running;
   bool _again = false;
@@ -152,7 +157,8 @@ class SyncService {
       final holidaysAt = await _repo.readState(holidaysAtKey);
       final now = _clock();
       if (holidaysAt == null ||
-          now.difference(DateTime.parse(holidaysAt)) >= holidaysRefreshEvery) {
+          now.difference(DateTime.parse(holidaysAt)) >= holidaysRefreshEvery ||
+          !await _repo.hasHolidays()) {
         await _repo.replaceHolidays(await _api.fetchFeriados());
         await _repo.writeState(holidaysAtKey, now.toUtc().toIso8601String());
       }
@@ -166,6 +172,43 @@ class SyncService {
       );
     } on RemoteRejectedException catch (e) {
       message = e.message;
+    }
+
+    // 4. Perfil (agrupamiento). Un rechazo no frena el resto. Si el servidor
+    // todavía no tiene la columna, lo elegido sigue pendiente (se usa local)
+    // y se reintenta en la próxima pasada.
+    try {
+      final local = await _perfilRepo.unsynced(userId);
+      if (local != null) {
+        try {
+          await _api.saveAgrupamiento(userId, local.agrupamiento);
+          await _perfilRepo.markSynced(userId, local.revision);
+        } on RemoteSchemaMissingException {
+          return SyncResult(
+            uploaded: uploaded,
+            failed: failed,
+            downloaded: downloaded,
+            message: message,
+          );
+        } on RemoteRejectedException catch (e) {
+          final texto = 'No se pudo guardar el agrupamiento: ${e.message}';
+          await _perfilRepo.markError(userId, local.revision, texto);
+          message = texto;
+        }
+      }
+      await _perfilRepo.applyRemote(userId, await _api.fetchPerfil(userId));
+    } on RemoteUnavailableException catch (e) {
+      return SyncResult(
+        uploaded: uploaded,
+        failed: failed,
+        downloaded: downloaded,
+        offline: true,
+        message: e.message,
+      );
+    } on RemoteSchemaMissingException {
+      // Sin la columna en el servidor: queda lo que haya en el dispositivo.
+    } on RemoteRejectedException catch (e) {
+      message = 'No se pudo leer el perfil: ${e.message}';
     }
 
     return SyncResult(

@@ -408,29 +408,68 @@ void main() {
       });
     });
 
-    test('fichada en fin de semana: todo lo trabajado es a favor', () {
+    test('fichada en fin de semana: no computa y queda para revisar', () {
       final d = calc.calculate(
         saturday,
         records: [rec(saturday, hm(9, 0), hm(13, 0))],
       );
-      expect(d.status, DayStatus.worked);
+      expect(d.status, DayStatus.nonWorkingDayRecords);
       expect(d.isBusinessDay, isFalse);
-      expect(d.workedMinutes, 240);
+      expect(d.workedMinutes, isNull);
       expect(d.debtMinutes, 0);
-      expect(d.creditMinutes, 240);
-      expect(d.bankDeltaMinutes, 240);
-      expect(d.needsReview, isFalse);
+      expect(d.creditMinutes, 0);
+      expect(d.bankDeltaMinutes, 0);
+      expect(d.needsReview, isTrue);
     });
 
-    test('fichada en feriado: todo lo trabajado es a favor, sin deuda', () {
+    test('fichada en feriado (importada): no computa y queda para revisar', () {
       final d = calc.calculate(
         holiday,
         records: [rec(holiday, hm(10, 0), hm(12, 0))],
       );
-      expect(d.status, DayStatus.worked);
-      expect(d.creditMinutes, 120);
+      expect(d.status, DayStatus.nonWorkingDayRecords);
+      expect(d.creditMinutes, 0);
       expect(d.debtMinutes, 0);
-      expect(d.needsReview, isFalse);
+      expect(d.bankDeltaMinutes, 0);
+      expect(d.needsReview, isTrue);
+    });
+
+    test('fichada en un no laborable turístico: tampoco computa', () {
+      final bridge = CalendarDate(2026, 6, 12); // viernes ficticio
+      final c = DayCalculator(
+        holidays: [
+          Holiday(
+            date: bridge,
+            name: 'Puente ficticio',
+            kind: HolidayKind.nonWorking,
+          ),
+        ],
+      );
+      final d = c.calculate(
+        bridge,
+        records: [rec(bridge, hm(8, 0), hm(18, 0))],
+      );
+      expect(d.status, DayStatus.nonWorkingDayRecords);
+      expect(d.isBusinessDay, isFalse);
+      expect(d.bankDeltaMinutes, 0);
+      expect(d.needsReview, isTrue);
+    });
+
+    test('fichada abierta en sábado: también queda para revisar', () {
+      final d = calc.calculate(saturday, records: [rec(saturday, hm(9, 0))]);
+      expect(d.status, DayStatus.nonWorkingDayRecords);
+      expect(d.needsReview, isTrue);
+    });
+
+    test('acumulación manual de un sábado sigue sumando', () {
+      final d = calc.calculate(
+        saturday,
+        records: [rec(saturday, hm(9, 0), hm(13, 0))],
+        movements: [BankMovement.accumulation(date: saturday, minutes: 240)],
+      );
+      expect(d.status, DayStatus.nonWorkingDayRecords);
+      expect(d.accumulationMinutes, 240);
+      expect(d.bankDeltaMinutes, 240);
     });
 
     test('egreso anterior al ingreso es inválido y no computa', () {

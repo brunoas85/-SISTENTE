@@ -2,6 +2,7 @@
 /// drift). Todas las horas son minutos `int`.
 library;
 
+export 'agrupamiento.dart';
 export 'bank_balance.dart';
 export 'calendar_date.dart';
 export 'day_calculation.dart';
@@ -10,3 +11,4 @@ export 'monthly_summary.dart';
 export 'time_format.dart';
 export 'usufruct_validation.dart';
 export 'workday_schedule.dart';
+export 'working_days.dart';

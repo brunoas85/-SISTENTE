@@ -95,7 +95,11 @@ void main() {
           rec(CalendarDate(2026, 6, 1), hm(8, 0), hm(17, 0)), // +60
           rec(CalendarDate(2026, 6, 2), hm(8, 0), hm(15, 0)), // deuda 60
           rec(CalendarDate(2026, 6, 3), hm(8, 0)), // abierto
-          rec(CalendarDate(2026, 6, 6), hm(9, 0), hm(12, 0)), // sábado +180
+          rec(
+            CalendarDate(2026, 6, 6),
+            hm(9, 0),
+            hm(12, 0),
+          ), // sábado: no computa
         ],
         movements: [
           BankMovement.usufruct(
@@ -112,22 +116,22 @@ void main() {
       expect(st(3), DayStatus.open);
       expect(st(4), DayStatus.missing);
       expect(st(5), DayStatus.usufruct);
-      expect(st(6), DayStatus.worked);
+      expect(st(6), DayStatus.nonWorkingDayRecords);
       expect(st(7), DayStatus.nonWorkingDay);
       expect(st(8), DayStatus.missing);
       expect(st(10), DayStatus.today); // hoy: todavía no es faltante
       expect(st(11), DayStatus.future);
       expect(st(15), DayStatus.nonWorkingDay);
 
-      expect(s.workedMinutes, 540 + 420 + 180);
-      expect(s.creditMinutes, 60 + 180);
+      expect(s.workedMinutes, 540 + 420);
+      expect(s.creditMinutes, 60);
       expect(s.missingDays.map((d) => d.date.day), [4, 8, 9]);
       expect(s.debtMinutes, 60 + 3 * 480);
       expect(s.uncoveredDebtMinutes, 60 + 3 * 480);
       expect(s.activeUsufructMinutes, 480);
-      expect(s.bankDeltaMinutes, 240 - (60 + 3 * 480) - 480);
+      expect(s.bankDeltaMinutes, 60 - (60 + 3 * 480) - 480);
       expect(s.openDays.single.date.day, 3);
-      expect(s.daysNeedingReview, isEmpty);
+      expect(s.daysNeedingReview.map((d) => d.date.day), [6]);
     });
   });
 }

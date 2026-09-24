@@ -24,6 +24,13 @@ class RemoteRejectedException implements Exception {
   String toString() => message;
 }
 
+/// Al servidor le falta una columna o tabla que la app espera (por ejemplo,
+/// `profiles.agrupamiento` antes de aplicar la migración). Es un rechazo,
+/// pero lo local se conserva pendiente y se reintenta en la próxima pasada.
+class RemoteSchemaMissingException extends RemoteRejectedException {
+  const RemoteSchemaMissingException(super.message);
+}
+
 /// Contrato con el backend que usa la cola de sincronización.
 abstract interface class FichadasRemote {
   /// Sube (o reemplaza) una foto en el bucket `comprobantes`.
@@ -37,6 +44,12 @@ abstract interface class FichadasRemote {
   Future<List<RemoteFichada>> fetchFichadasChangedSince(DateTime? since);
 
   Future<List<RemoteFeriado>> fetchFeriados();
+
+  /// Perfil del usuario con sesión, o `null` si todavía no tiene fila.
+  Future<RemotePerfil?> fetchPerfil(String userId);
+
+  /// Guarda `profiles.agrupamiento` del usuario (crea la fila si falta).
+  Future<void> saveAgrupamiento(String userId, String? agrupamiento);
 }
 
 class SupabaseFichadasRemote implements FichadasRemote {
@@ -89,21 +102,49 @@ class SupabaseFichadasRemote implements FichadasRemote {
 
   @override
   Future<List<RemoteFeriado>> fetchFeriados() => _guard(() async {
-    final rows = await _client.from('feriados').select('fecha, nombre');
+    final rows = await _client.from('feriados').select('fecha, nombre, tipo');
     return [
       for (final r in rows)
         RemoteFeriado(
           fecha: r['fecha'] as String,
           nombre: r['nombre'] as String,
+          tipo: r['tipo'] as String? ?? 'inamovible',
         ),
     ];
   });
+
+  @override
+  Future<RemotePerfil?> fetchPerfil(String userId) => _guard(() async {
+    final row = await _client
+        .from('profiles')
+        .select('user_id, agrupamiento')
+        .eq('user_id', userId)
+        .maybeSingle();
+    if (row == null) return null;
+    return RemotePerfil(
+      userId: row['user_id'] as String,
+      agrupamiento: row['agrupamiento'] as String?,
+    );
+  });
+
+  @override
+  Future<void> saveAgrupamiento(String userId, String? agrupamiento) => _guard(
+    () => _client.from('profiles').upsert({
+      'user_id': userId,
+      'agrupamiento': agrupamiento,
+    }, onConflict: 'user_id'),
+  );
 
   /// Traduce los errores de Supabase a los dos casos que entiende el sync.
   Future<T> _guard<T>(Future<T> Function() call) async {
     try {
       return await call();
     } on PostgrestException catch (e) {
+      if (_schemaMissingCodes.contains(e.code)) {
+        throw RemoteSchemaMissingException(
+          'El servidor todavía no tiene los cambios de esquema (${e.message}).',
+        );
+      }
       final status = int.tryParse(e.code ?? '');
       if (status != null && status >= 500) {
         throw RemoteUnavailableException(
@@ -131,18 +172,27 @@ class SupabaseFichadasRemote implements FichadasRemote {
     }
   }
 
+  /// Columna, tabla o tipo inexistente (Postgres y caché de PostgREST).
+  static const _schemaMissingCodes = {
+    '42703',
+    '42P01',
+    '42704',
+    'PGRST204',
+    'PGRST205',
+  };
+
   static String _postgrestMessage(PostgrestException e) {
     switch (e.code) {
       case '23514':
-        return 'El servidor rechazó la fichada por una regla de datos '
+        return 'El servidor rechazó el cambio por una regla de datos '
             '(${e.message}).';
       case '42501':
-        return 'Sin permiso para guardar esta fichada.';
+        return 'Sin permiso para guardar este cambio.';
       case 'PGRST301':
       case 'PGRST303':
         return 'La sesión venció. Cerrá sesión y volvé a entrar.';
       default:
-        return 'El servidor rechazó la fichada: ${e.message}';
+        return 'El servidor rechazó el cambio: ${e.message}';
     }
   }
 }

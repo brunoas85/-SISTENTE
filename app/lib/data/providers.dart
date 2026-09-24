@@ -5,6 +5,7 @@ import '../core/auth/auth_providers.dart';
 import 'fichadas/fichadas_repository.dart';
 import 'local/app_database.dart';
 import 'local/open_connection.dart';
+import 'perfil/perfil_repository.dart';
 import 'photos/photo_capture.dart';
 import 'photos/photo_compressor.dart';
 import 'photos/photo_store.dart';
@@ -42,12 +43,19 @@ FichadasRepository fichadasRepository(Ref ref) => FichadasRepository(
 );
 
 @Riverpod(keepAlive: true)
+PerfilRepository perfilRepository(Ref ref) => PerfilRepository(
+  ref.watch(appDatabaseProvider),
+  clock: ref.watch(clockProvider),
+);
+
+@Riverpod(keepAlive: true)
 FichadasRemote fichadasRemote(Ref ref) =>
     SupabaseFichadasRemote(ref.watch(supabaseClientProvider));
 
 @Riverpod(keepAlive: true)
 SyncService syncService(Ref ref) => SyncService(
   repository: ref.watch(fichadasRepositoryProvider),
+  perfiles: ref.watch(perfilRepositoryProvider),
   remote: ref.watch(fichadasRemoteProvider),
   clock: ref.watch(clockProvider),
 );

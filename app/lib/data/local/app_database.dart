@@ -61,8 +61,32 @@ class Feriados extends Table {
   TextColumn get fecha => text()();
   TextColumn get nombre => text()();
 
+  /// `inamovible`, `trasladable` o `no_laborable` (ver `HolidayKind`).
+  TextColumn get tipo => text().withDefault(const Constant('inamovible'))();
+
   @override
   Set<Column> get primaryKey => {fecha};
+}
+
+/// Cache local de `public.profiles` (solo lo que usa la app).
+///
+/// Si no hay fila para el usuario, todavía no se bajó el perfil. El
+/// agrupamiento se elige en el dispositivo (queda `pending`) y el sync lo
+/// sube; lo que baja del servidor no pisa un cambio local sin subir.
+@DataClassName('LocalProfile')
+class Profiles extends Table {
+  TextColumn get userId => text()();
+
+  /// Valor del enum `agrupamiento`, o `null` si no se eligió.
+  TextColumn get agrupamiento => text().nullable()();
+
+  DateTimeColumn get updatedAt => dateTime()();
+  IntColumn get revision => integer().withDefault(const Constant(0))();
+  TextColumn get syncStatus => textEnum<SyncStatus>()();
+  TextColumn get syncError => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {userId};
 }
 
 /// Valores sueltos del sync (por ej. el cursor de la última descarga).
@@ -84,12 +108,15 @@ class LocalPhotos extends Table {
   Set<Column> get primaryKey => {key};
 }
 
-@DriftDatabase(tables: [Fichadas, Feriados, SyncState, LocalPhotos])
+@DriftDatabase(tables: [Fichadas, Feriados, Profiles, SyncState, LocalPhotos])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
+  /// Clave del sync con la fecha de la última descarga de feriados.
+  static const holidaysPulledAtKey = 'feriados_pulled_at';
+
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -101,6 +128,16 @@ class AppDatabase extends _$AppDatabase {
       await customStatement(
         'CREATE INDEX fichadas_sync_idx ON fichadas (user_id, sync_status)',
       );
+    },
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.addColumn(feriados, feriados.tipo);
+        await m.createTable(profiles);
+        // Los feriados guardados no tienen el tipo: se vuelven a bajar.
+        await (delete(
+          syncState,
+        )..where((s) => s.key.equals(holidaysPulledAtKey))).go();
+      }
     },
   );
 }

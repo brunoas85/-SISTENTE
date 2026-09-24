@@ -1,6 +1,7 @@
 import 'package:asistente/data/fichadas/fichadas_repository.dart';
 import 'package:asistente/data/fichadas/remote_fichada.dart';
 import 'package:asistente/data/local/app_database.dart';
+import 'package:asistente/data/perfil/perfil_repository.dart';
 import 'package:asistente/data/sync/sync_service.dart';
 import 'package:asistente/domain/domain.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +13,7 @@ void main() {
   late InMemoryPhotoStore photos;
   late FichadasRepository repo;
   late FakeFichadasRemote remote;
+  late PerfilRepository perfiles;
   late SyncService sync;
   final hoy = CalendarDate(2026, 9, 24);
 
@@ -21,7 +23,13 @@ void main() {
     final clock = steppingClock(DateTime(2026, 9, 24, 8));
     repo = FichadasRepository(db, photos, clock: clock, newId: sequentialIds());
     remote = FakeFichadasRemote();
-    sync = SyncService(repository: repo, remote: remote, clock: clock);
+    perfiles = PerfilRepository(db, clock: clock);
+    sync = SyncService(
+      repository: repo,
+      perfiles: perfiles,
+      remote: remote,
+      clock: clock,
+    );
   });
 
   tearDown(() => db.close());
@@ -295,6 +303,134 @@ void main() {
     await sync.sync(fakeUserId);
     final feriados = await repo.watchHolidays().first;
     expect(feriados.single.date, CalendarDate(2026, 10, 12));
+  });
+
+  test('los feriados guardan el tipo', () async {
+    remote.feriados = const [
+      RemoteFeriado(
+        fecha: '2026-07-10',
+        nombre: 'Puente ficticio',
+        tipo: 'no_laborable',
+      ),
+      RemoteFeriado(
+        fecha: '2026-06-15',
+        nombre: 'Feriado ficticio',
+        tipo: 'trasladable',
+      ),
+    ];
+    await sync.sync(fakeUserId);
+    final feriados = await repo.watchHolidays().first;
+    // Ordenados por fecha.
+    expect(feriados.map((h) => h.kind), [
+      HolidayKind.movable,
+      HolidayKind.nonWorking,
+    ]);
+  });
+
+  test(
+    'sin feriados guardados los vuelve a bajar aunque no pasaron 12 h',
+    () async {
+      await sync.sync(fakeUserId); // el servidor todavía no tenía feriados
+      expect(remote.feriadosFetches, 1);
+      remote.feriados = const [
+        RemoteFeriado(fecha: '2026-10-12', nombre: 'Feriado ficticio'),
+      ];
+      await sync.sync(fakeUserId);
+      expect(remote.feriadosFetches, 2);
+      expect(await repo.hasHolidays(), isTrue);
+      // Con feriados guardados, no se vuelven a pedir hasta que pasen 12 h.
+      await sync.sync(fakeUserId);
+      expect(remote.feriadosFetches, 2);
+    },
+  );
+
+  group('perfil', () {
+    test('baja el agrupamiento del servidor', () async {
+      remote.perfil = const RemotePerfil(
+        userId: fakeUserId,
+        agrupamiento: 'guardaparque',
+      );
+      await sync.sync(fakeUserId);
+      final p = await perfiles.watchPerfil(fakeUserId).first;
+      expect(p!.agrupamiento, Agrupamiento.guardaparque);
+      expect(p.syncStatus, SyncStatus.synced);
+    });
+
+    test('sin agrupamiento en el servidor queda guardado como null', () async {
+      remote.perfil = const RemotePerfil(userId: fakeUserId);
+      await sync.sync(fakeUserId);
+      final p = await perfiles.watchPerfil(fakeUserId).first;
+      expect(p, isNotNull);
+      expect(p!.agrupamiento, isNull);
+    });
+
+    test('el elegido sin red queda pendiente y se sube después', () async {
+      remote.online = false;
+      await perfiles.setAgrupamiento(
+        fakeUserId,
+        Agrupamiento.guardaparqueApoyo,
+      );
+      await sync.sync(fakeUserId);
+      var p = await perfiles.watchPerfil(fakeUserId).first;
+      expect(p!.syncStatus, SyncStatus.pending);
+      expect(p.agrupamiento, Agrupamiento.guardaparqueApoyo);
+
+      remote.online = true;
+      await sync.sync(fakeUserId);
+      expect(remote.perfil!.agrupamiento, 'guardaparque_apoyo');
+      p = await perfiles.watchPerfil(fakeUserId).first;
+      expect(p!.syncStatus, SyncStatus.synced);
+    });
+
+    test('sin la columna en el servidor: queda pendiente, sin error, y las '
+        'fichadas se sincronizan igual', () async {
+      remote.perfilSinColumna = true;
+      final f = await ingreso();
+      await perfiles.setAgrupamiento(fakeUserId, Agrupamiento.guardaparque);
+
+      final result = await sync.sync(fakeUserId);
+
+      expect(result.offline, isFalse);
+      expect(result.message, isNull);
+      expect((await repo.findById(f.id))!.syncStatus, SyncStatus.synced);
+      var p = await perfiles.watchPerfil(fakeUserId).first;
+      expect(p!.agrupamiento, Agrupamiento.guardaparque);
+      expect(p.syncStatus, SyncStatus.pending);
+      expect(p.syncError, isNull);
+
+      // Cuando se aplica la migración, se sube en la próxima pasada.
+      remote.perfilSinColumna = false;
+      await sync.sync(fakeUserId);
+      expect(remote.perfil!.agrupamiento, 'guardaparque');
+      p = await perfiles.watchPerfil(fakeUserId).first;
+      expect(p!.syncStatus, SyncStatus.synced);
+    });
+
+    test(
+      'sin la columna y sin perfil local: no crea nada (la app lo pide)',
+      () async {
+        remote.perfilSinColumna = true;
+        final result = await sync.sync(fakeUserId);
+        expect(result.message, isNull);
+        expect(await perfiles.watchPerfil(fakeUserId).first, isNull);
+      },
+    );
+
+    test('la bajada no pisa un cambio local sin subir', () async {
+      remote.perfil = const RemotePerfil(
+        userId: fakeUserId,
+        agrupamiento: 'administrativo',
+      );
+      remote.rejectPerfil = 'rechazo ficticio';
+      await perfiles.setAgrupamiento(fakeUserId, Agrupamiento.guardaparque);
+      final result = await sync.sync(fakeUserId);
+
+      final p = await perfiles.watchPerfil(fakeUserId).first;
+      expect(p!.agrupamiento, Agrupamiento.guardaparque);
+      expect(p.syncStatus, SyncStatus.error);
+      expect(p.syncError, contains('rechazo ficticio'));
+      expect(result.message, contains('agrupamiento'));
+    });
   });
 
   test('dos llamadas simultáneas no suben dos veces', () async {

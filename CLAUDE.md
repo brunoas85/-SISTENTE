@@ -61,7 +61,11 @@ Nunca usar horas estilo Excel (fracción de día): no representan saldos negativ
 
 **Asistencia diaria**
 - `trabajado = egreso - ingreso` (sin descuento de almuerzo).
-- `jornada` por defecto 480 min (8 h), configurable por persona y con vigencia por fecha.
+- `jornada` según el **agrupamiento**: administrativo 480 min (8 h);
+  guardaparque y guardaparque de apoyo 420 min (7 h). Una vigencia por fecha
+  en `jornadas` tiene prioridad.
+- El a favor es solo lo que excede la jornada, al minuto: con la jornada
+  exacta no hay ni a favor ni deuda.
 - `deuda = max(jornada - trabajado, 0)` · `a_favor = max(trabajado - jornada, 0)`.
 - **Un registro sin egreso está *abierto* y no computa.** En la planilla, un
   egreso vacío daba −5:53 trabajadas y 13:53 de deuda; ese error no se repite acá.
@@ -162,8 +166,11 @@ supabase gen types dart ...     # tras cambiar el esquema
     usufructo en fin de semana o feriado descuenta igual.
   - Para ver si alcanza el saldo de un usufructo se cuentan también los
     usufructos ya cargados a futuro.
-  - Lo fichado en un fin de semana o feriado entra solo al banco como a favor.
-  - Los no laborables turísticos (puentes) no son días hábiles.
+  - Los fines de semana, los feriados y los no laborables turísticos (puentes)
+    **no son laborables: no se puede fichar esos días**. Solo se puede cerrar
+    un tramo abierto de un día hábil anterior. Las horas de un sábado se cargan
+    como acumulación manual. La app tiene una sección de consulta de los
+    feriados nacionales, que están en la tabla `feriados`.
   - Una acumulación también puede quedar `perdida` y entonces no computa. No
     hay vencimiento automático: se marca a mano.
   - Un usufructo total es igual a la jornada vigente, y no se puede usufructuar

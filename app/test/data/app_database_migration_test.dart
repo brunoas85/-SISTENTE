@@ -1,0 +1,54 @@
+import 'package:asistente/data/local/app_database.dart';
+import 'package:drift/drift.dart';
+import 'package:drift/native.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import '../support/fakes.dart';
+
+void main() {
+  test(
+    'v1 → v2: agrega feriados.tipo, crea profiles y rebaja feriados',
+    () async {
+      driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+      final db = AppDatabase(
+        NativeDatabase.memory(
+          setup: (raw) {
+            // Tablas de la versión 1 que toca la migración.
+            raw.execute(
+              'CREATE TABLE feriados (fecha TEXT NOT NULL, '
+              'nombre TEXT NOT NULL, PRIMARY KEY (fecha))',
+            );
+            raw.execute(
+              'CREATE TABLE sync_state (key TEXT NOT NULL, '
+              'value TEXT NOT NULL, PRIMARY KEY (key))',
+            );
+            raw.execute(
+              "INSERT INTO feriados VALUES ('2026-10-12', 'Feriado ficticio')",
+            );
+            raw.execute(
+              "INSERT INTO sync_state VALUES ('feriados_pulled_at', "
+              "'2026-09-24T00:00:00.000Z')",
+            );
+            raw.execute('PRAGMA user_version = 1');
+          },
+        ),
+      );
+      addTearDown(db.close);
+
+      final feriado = await db.select(db.feriados).getSingle();
+      expect(feriado.tipo, 'inamovible');
+      expect(await db.select(db.syncState).get(), isEmpty);
+
+      await db
+          .into(db.profiles)
+          .insert(
+            ProfilesCompanion.insert(
+              userId: fakeUserId,
+              updatedAt: DateTime(2026, 9, 24),
+              syncStatus: SyncStatus.pending,
+            ),
+          );
+      expect(await db.select(db.profiles).get(), hasLength(1));
+    },
+  );
+}

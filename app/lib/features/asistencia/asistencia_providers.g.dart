@@ -227,4 +227,4 @@ final class ResumenFicharProvider
   }
 }
 
-String _$resumenFicharHash() => r'656f697dc6088fe0fe6654947df16bb581653e75';
+String _$resumenFicharHash() => r'9bd369e721ecfc6a50dac22b54290e0202dffcd9';

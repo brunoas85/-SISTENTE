@@ -5,6 +5,7 @@ import '../../data/fichadas/fichadas_repository.dart';
 import '../../data/local/app_database.dart';
 import '../../data/providers.dart';
 import '../../domain/domain.dart';
+import '../perfil/perfil_providers.dart';
 
 part 'asistencia_providers.g.dart';
 
@@ -44,6 +45,8 @@ class ResumenFichar {
     required this.saldoTotalMinutes,
     required this.abiertasAnteriores,
     this.todas = const [],
+    this.diaNoLaborable,
+    this.agrupamiento,
   });
 
   final CalendarDate hoy;
@@ -65,6 +68,21 @@ class ResumenFichar {
 
   /// Todas las fichadas activas.
   final List<LocalFichada> todas;
+
+  /// Si hoy no es laborable (fin de semana o feriado), por qué. Esos días no
+  /// se puede fichar ingreso.
+  final NonWorkingDay? diaNoLaborable;
+
+  /// Agrupamiento del perfil (`null` si no se eligió: jornada de 480).
+  final Agrupamiento? agrupamiento;
+
+  /// Jornada de hoy en minutos.
+  int get jornadaMinutes => dia.workdayMinutes;
+
+  /// El botón principal está bloqueado: hoy no es laborable y no hay un
+  /// tramo abierto que cerrar.
+  bool get fichadaBloqueada =>
+      diaNoLaborable != null && proximaAccion == AccionFichar.ingreso;
 
   /// Tramo abierto de hoy, si hay.
   LocalFichada? get abierto {
@@ -106,18 +124,22 @@ enum AccionFichar {
 
 /// Arma el [ResumenFichar] con el calculador de `domain/`.
 ///
-/// Todavía no incluye los movimientos manuales del banco (acumulaciones y
-/// usufructos) ni las jornadas por vigencia: se usa la jornada por defecto.
+/// La jornada sale del [agrupamiento] (8 h o 7 h; 480 si no hay). Todavía
+/// no incluye los movimientos manuales del banco (acumulaciones y
+/// usufructos) ni las vigencias de `jornadas`, que no se bajan al
+/// dispositivo.
 ResumenFichar buildResumenFichar({
   required CalendarDate hoy,
   required List<LocalFichada> fichadas,
   required List<Holiday> feriados,
+  Agrupamiento? agrupamiento,
 }) {
   final records = [for (final f in fichadas) f.toDailyRecord()];
   final calculator = DayCalculator(
     holidays: feriados,
     today: hoy,
     controlStart: controlStartFrom(records),
+    agrupamiento: agrupamiento,
   );
   final mes = buildMonthlySummary(
     year: hoy.year,
@@ -140,6 +162,8 @@ ResumenFichar buildResumenFichar({
     saldoMesMinutes: mes.bankDeltaMinutes,
     saldoTotalMinutes: total.balanceMinutes,
     todas: fichadas,
+    diaNoLaborable: nonWorkingDayFor(hoy, feriados),
+    agrupamiento: agrupamiento,
     abiertasAnteriores: [
       for (final f in fichadas)
         if (f.isOpen && f.date.isBefore(hoy)) f,
@@ -151,6 +175,7 @@ ResumenFichar buildResumenFichar({
 AsyncValue<ResumenFichar> resumenFichar(Ref ref) {
   final fichadas = ref.watch(misFichadasProvider);
   final feriados = ref.watch(feriadosLocalesProvider);
+  final perfil = ref.watch(miPerfilProvider);
   final hoy = ref.watch(todayProvider);
 
   if (fichadas.hasError) {
@@ -167,6 +192,14 @@ AsyncValue<ResumenFichar> resumenFichar(Ref ref) {
   }
   final f = fichadas.value;
   final h = feriados.value;
-  if (f == null || h == null) return const AsyncLoading();
-  return AsyncData(buildResumenFichar(hoy: hoy, fichadas: f, feriados: h));
+  if (f == null || h == null || perfil.isLoading) return const AsyncLoading();
+  return AsyncData(
+    buildResumenFichar(
+      hoy: hoy,
+      fichadas: f,
+      feriados: h,
+      // Si no se pudo leer el perfil, se usa la jornada por defecto.
+      agrupamiento: perfil.value?.agrupamiento,
+    ),
+  );
 }

@@ -1,16 +1,28 @@
+import 'agrupamiento.dart';
 import 'calendar_date.dart';
 import 'models.dart';
 
 /// Resuelve la jornada vigente para una fecha a partir de una lista de
 /// vigencias.
+///
+/// Prioridad: una vigencia de `jornadas` que cubra la fecha; si no hay, la
+/// jornada del [Agrupamiento] (8 h administrativo, 7 h guardaparque y
+/// guardaparque de apoyo); si no hay agrupamiento, 480 min.
 class WorkdayScheduleResolver {
   /// Lanza [ArgumentError] si hay dos vigencias con la misma fecha de inicio
   /// y distinta cantidad de minutos (no se adivina cuál vale).
+  ///
+  /// [defaultMinutes], si se indica, reemplaza al default del
+  /// [agrupamiento].
   WorkdayScheduleResolver(
     Iterable<WorkdaySchedule> schedules, {
-    this.defaultMinutes = defaultWorkdayMinutes,
-  }) : _schedules = _sortAndValidate(schedules);
+    Agrupamiento? agrupamiento,
+    int? defaultMinutes,
+  }) : defaultMinutes =
+           defaultMinutes ?? workdayMinutesForAgrupamiento(agrupamiento),
+       _schedules = _sortAndValidate(schedules);
 
+  /// Jornada cuando no hay vigencia para la fecha.
   final int defaultMinutes;
   final List<WorkdaySchedule> _schedules;
 
@@ -47,7 +59,10 @@ class WorkdayScheduleResolver {
 int workdayMinutesFor(
   CalendarDate date,
   Iterable<WorkdaySchedule> schedules, {
-  int defaultMinutes = defaultWorkdayMinutes,
-}) =>
-    WorkdayScheduleResolver(schedules, defaultMinutes: defaultMinutes)
-        .minutesFor(date);
+  Agrupamiento? agrupamiento,
+  int? defaultMinutes,
+}) => WorkdayScheduleResolver(
+  schedules,
+  agrupamiento: agrupamiento,
+  defaultMinutes: defaultMinutes,
+).minutesFor(date);

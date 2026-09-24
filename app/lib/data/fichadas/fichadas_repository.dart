@@ -98,15 +98,29 @@ class FichadasRepository {
     return query.map((row) => row.read(count) ?? 0).watchSingle();
   }
 
-  Stream<List<Holiday>> watchHolidays() => _db
-      .select(_db.feriados)
-      .watch()
-      .map(
-        (rows) => [
-          for (final r in rows)
-            Holiday(date: parseIsoDate(r.fecha), name: r.nombre),
-        ],
-      );
+  /// Feriados guardados en el dispositivo, por fecha.
+  Stream<List<Holiday>> watchHolidays() =>
+      (_db.select(_db.feriados)..orderBy([(f) => OrderingTerm.asc(f.fecha)]))
+          .watch()
+          .map((rows) => [for (final r in rows) _toHoliday(r)]);
+
+  static Holiday _toHoliday(LocalFeriado r) => Holiday(
+    date: parseIsoDate(r.fecha),
+    name: r.nombre,
+    kind: HolidayKind.fromDbValue(r.tipo),
+  );
+
+  /// Feriados de [date] guardados en el dispositivo.
+  Future<List<Holiday>> _holidaysOn(CalendarDate date) async => [
+    for (final r in await (_db.select(
+      _db.feriados,
+    )..where((f) => f.fecha.equals(toIsoDate(date)))).get())
+      _toHoliday(r),
+  ];
+
+  /// `true` si hay algún feriado guardado en el dispositivo.
+  Future<bool> hasHolidays() async =>
+      (await (_db.select(_db.feriados)..limit(1)).get()).isNotEmpty;
 
   Future<LocalFichada?> findById(String id) =>
       (_db.select(_t)..where((f) => f.id.equals(id))).getSingleOrNull();
@@ -148,7 +162,9 @@ class FichadasRepository {
   /// el usuario. Si difieren, se guarda la propuesta en
   /// `ingreso_original_min` y `editado = true`. La foto es opcional.
   ///
-  /// No se puede abrir un tramo si hay otro abierto (de hoy o de un día
+  /// No se puede fichar en un día no laborable (fin de semana, feriado o no
+  /// laborable turístico, según los feriados guardados en el dispositivo).
+  /// Tampoco se puede abrir un tramo si hay otro abierto (de hoy o de un día
   /// anterior: hay que cerrarlo primero) ni si se superpone con otro tramo
   /// del mismo día.
   Future<LocalFichada> ficharIngreso({
@@ -160,6 +176,13 @@ class FichadasRepository {
   }) async {
     _checkMinutes(proposedMin);
     _checkMinutes(chosenMin);
+    final noLaborable = nonWorkingDayFor(date, await _holidaysOn(date));
+    if (noLaborable != null) {
+      throw FichadaInvalidaException(
+        '${motivoDiaNoLaborable(noLaborable, esHoy: date == CalendarDate.fromDateTime(_clock()))}. '
+        'No se puede fichar.',
+      );
+    }
     final open = await openRecords(userId);
     if (open.isNotEmpty) {
       final o = open.first;
@@ -213,6 +236,9 @@ class FichadasRepository {
   /// [proposedMin] es `null` cuando no hay hora del dispositivo que proponer
   /// (cerrar un tramo de un día anterior, con la hora a mano): no se guarda
   /// hora original. La foto es opcional.
+  ///
+  /// Cerrar un tramo abierto se permite siempre, aunque hoy no sea laborable
+  /// (si no, un tramo abierto bloquearía las fichadas siguientes).
   Future<LocalFichada> ficharEgreso({
     required String userId,
     required String fichadaId,
@@ -358,7 +384,11 @@ class FichadasRepository {
         await _db.batch(
           (b) => b.insertAll(_db.feriados, [
             for (final f in feriados)
-              FeriadosCompanion.insert(fecha: f.fecha, nombre: f.nombre),
+              FeriadosCompanion.insert(
+                fecha: f.fecha,
+                nombre: f.nombre,
+                tipo: Value(f.tipo),
+              ),
           ]),
         );
       });

@@ -1,6 +1,7 @@
 import 'calendar_date.dart';
 
-/// Minutos de la jornada por defecto (8 h).
+/// Minutos de la jornada por defecto (8 h) cuando no hay agrupamiento
+/// elegido ni vigencia en `jornadas`.
 const int defaultWorkdayMinutes = 480;
 
 /// Tramo de asistencia: una fichada de ingreso y, opcionalmente, de egreso.
@@ -15,11 +16,11 @@ class DailyRecord {
     required this.date,
     required this.checkInMinutes,
     this.checkOutMinutes,
-  })  : assert(checkInMinutes >= 0 && checkInMinutes < 1440),
-        assert(
-          checkOutMinutes == null ||
-              (checkOutMinutes >= 0 && checkOutMinutes < 1440),
-        );
+  }) : assert(checkInMinutes >= 0 && checkInMinutes < 1440),
+       assert(
+         checkOutMinutes == null ||
+             (checkOutMinutes >= 0 && checkOutMinutes < 1440),
+       );
 
   final String? id;
   final CalendarDate date;
@@ -52,7 +53,7 @@ class DailyRecord {
 /// siguiente vigencia.
 class WorkdaySchedule {
   const WorkdaySchedule({required this.validFrom, required this.minutes})
-      : assert(minutes >= 0);
+    : assert(minutes >= 0);
 
   final CalendarDate validFrom;
   final int minutes;
@@ -70,23 +71,57 @@ class WorkdaySchedule {
   String toString() => 'WorkdaySchedule(desde $validFrom, $minutes min)';
 }
 
+/// Tipo de feriado nacional (columna `feriados.tipo`).
+enum HolidayKind {
+  /// Feriado inamovible.
+  fixed('inamovible'),
+
+  /// Feriado trasladable.
+  movable('trasladable'),
+
+  /// Día no laborable con fines turísticos (puente).
+  nonWorking('no_laborable');
+
+  const HolidayKind(this.dbValue);
+
+  /// Valor en la base (`inamovible`, `trasladable`, `no_laborable`).
+  final String dbValue;
+
+  /// Tipo con ese valor de la base, o [HolidayKind.fixed] si no se conoce.
+  static HolidayKind fromDbValue(String? value) {
+    for (final k in values) {
+      if (k.dbValue == value) return k;
+    }
+    return fixed;
+  }
+}
+
 /// Feriado nacional (o día no laborable) recibido desde afuera: el dominio
-/// no tiene feriados hardcodeados.
+/// no tiene feriados hardcodeados. Cualquiera de los tipos hace que el día
+/// no sea laborable.
 class Holiday {
-  const Holiday({required this.date, this.name = ''});
+  const Holiday({
+    required this.date,
+    this.name = '',
+    this.kind = HolidayKind.fixed,
+  });
 
   final CalendarDate date;
   final String name;
+  final HolidayKind kind;
 
   @override
   bool operator ==(Object other) =>
-      other is Holiday && other.date == date && other.name == name;
+      other is Holiday &&
+      other.date == date &&
+      other.name == name &&
+      other.kind == kind;
 
   @override
-  int get hashCode => Object.hash(date, name);
+  int get hashCode => Object.hash(date, name, kind);
 
   @override
-  String toString() => 'Holiday($date, $name)';
+  String toString() => 'Holiday($date, $name, ${kind.dbValue})';
 }
 
 enum BankMovementType {
@@ -142,14 +177,14 @@ class BankMovement {
     String? gdeDocumentTypeCode,
     String? gdeNumber,
   }) : this._(
-          id: id,
-          date: date,
-          type: BankMovementType.accumulation,
-          minutes: minutes,
-          status: status,
-          gdeDocumentTypeCode: gdeDocumentTypeCode,
-          gdeNumber: gdeNumber,
-        );
+         id: id,
+         date: date,
+         type: BankMovementType.accumulation,
+         minutes: minutes,
+         status: status,
+         gdeDocumentTypeCode: gdeDocumentTypeCode,
+         gdeNumber: gdeNumber,
+       );
 
   /// Usufructo de [minutes]. Para uno de jornada completa, [minutes] tiene
   /// que ser igual a la jornada vigente de ese día (normalmente 480); si no,
@@ -163,15 +198,15 @@ class BankMovement {
     String? gdeDocumentTypeCode,
     String? gdeNumber,
   }) : this._(
-          id: id,
-          date: date,
-          type: BankMovementType.usufruct,
-          minutes: minutes,
-          scope: scope,
-          status: status,
-          gdeDocumentTypeCode: gdeDocumentTypeCode,
-          gdeNumber: gdeNumber,
-        );
+         id: id,
+         date: date,
+         type: BankMovementType.usufruct,
+         minutes: minutes,
+         scope: scope,
+         status: status,
+         gdeDocumentTypeCode: gdeDocumentTypeCode,
+         gdeNumber: gdeNumber,
+       );
 
   final String? id;
   final CalendarDate date;
@@ -214,15 +249,15 @@ class BankMovement {
 
   @override
   int get hashCode => Object.hash(
-        id,
-        date,
-        type,
-        minutes,
-        scope,
-        status,
-        gdeDocumentTypeCode,
-        gdeNumber,
-      );
+    id,
+    date,
+    type,
+    minutes,
+    scope,
+    status,
+    gdeDocumentTypeCode,
+    gdeNumber,
+  );
 
   @override
   String toString() =>

@@ -5,10 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/auth_providers.dart';
 import '../../core/format/formatters.dart';
+import '../../data/fichadas/fichada_validation.dart';
 import '../../data/fichadas/fichadas_repository.dart';
 import '../../data/local/app_database.dart';
 import '../../data/providers.dart';
 import '../../domain/domain.dart';
+import '../perfil/perfil_providers.dart';
 import 'asistencia_providers.dart';
 import 'confirmar_fichada_page.dart';
 import 'widgets/sync_indicator.dart';
@@ -44,6 +46,7 @@ class _FicharPageState extends ConsumerState<FicharPage> {
   /// Abre la confirmación: la hora es la del toque y la foto es opcional.
   /// Si quedó abierto un tramo de un día anterior, primero se cierra ese.
   Future<void> _fichar(ResumenFichar resumen) async {
+    if (resumen.fichadaBloqueada) return;
     final now = ref.read(clockProvider)();
     final accion = resumen.proximaAccion;
     final messenger = ScaffoldMessenger.of(context);
@@ -222,12 +225,23 @@ class _Contenido extends StatelessWidget {
                 ),
               ),
               _SaldoLinea(resumen: resumen),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                child: Text(
+                  _jornadaTexto(resumen),
+                  key: const Key('jornada-hoy'),
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
               if (resumen.dia.status == DayStatus.conflict ||
-                  resumen.dia.status == DayStatus.invalid)
+                  resumen.dia.status == DayStatus.invalid ||
+                  resumen.dia.status == DayStatus.nonWorkingDayRecords)
                 _Aviso(
-                  texto:
-                      'Hay tramos superpuestos o con horas inválidas. '
-                      'Revisalos desde la PC.',
+                  texto: resumen.dia.status == DayStatus.nonWorkingDayRecords
+                      ? 'Hay fichadas en un día no laborable: no computan. '
+                            'Revisalas desde la PC.'
+                      : 'Hay tramos superpuestos o con horas inválidas. '
+                            'Revisalos desde la PC.',
                 ),
               if (pendiente != null)
                 _Aviso(
@@ -261,6 +275,8 @@ class _Contenido extends StatelessWidget {
             ],
           ),
         ),
+        if (resumen.fichadaBloqueada)
+          _NoLaborable(dia: resumen.diaNoLaborable!),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           child: FilledButton.icon(
@@ -271,13 +287,21 @@ class _Contenido extends StatelessWidget {
               foregroundColor: esIngreso ? null : theme.colorScheme.onTertiary,
               textStyle: theme.textTheme.headlineSmall,
             ),
-            onPressed: onFichar,
+            // Hoy no es laborable: no se ficha (sí se puede cerrar un tramo
+            // abierto de un día hábil anterior).
+            onPressed: resumen.fichadaBloqueada ? null : onFichar,
             icon: Icon(icono, size: 32),
             label: Text(etiqueta, textAlign: TextAlign.center),
           ),
         ),
       ],
     );
+  }
+
+  static String _jornadaTexto(ResumenFichar r) {
+    final a = r.agrupamiento;
+    final jornada = 'Jornada: ${formatMinutes(r.jornadaMinutes)}';
+    return a == null ? jornada : '$jornada · ${agrupamientoLabel(a)}';
   }
 
   static String _estadoDelDia(ResumenFichar r, LocalFichada? abierto) {
@@ -332,6 +356,54 @@ class _SaldoLinea extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   color: colorFor(resumen.saldoTotalMinutes),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Motivo por el que hoy no se puede fichar, arriba del botón.
+class _NoLaborable extends StatelessWidget {
+  const _NoLaborable({required this.dia});
+
+  final NonWorkingDay dia;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Card(
+        color: scheme.secondaryContainer,
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Icon(Icons.event_busy, color: scheme.onSecondaryContainer),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      motivoDiaNoLaborable(dia, esHoy: true),
+                      key: const Key('aviso-no-laborable'),
+                      style: Theme.of(context).textTheme.titleMedium
+                          ?.copyWith(color: scheme.onSecondaryContainer),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'No se puede fichar hoy. Las horas trabajadas en un '
+                      'día no laborable se cargan como acumulación en el '
+                      'banco de horas.',
+                      style: TextStyle(color: scheme.onSecondaryContainer),
+                    ),
+                  ],
                 ),
               ),
             ],
