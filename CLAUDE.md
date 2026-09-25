@@ -99,6 +99,8 @@ Nunca usar horas estilo Excel (fracción de día): no representan saldos negativ
   `aprobado`, `no_aceptado`, `abandonado`) en vez del SI/NO de la planilla.
 - Número de IF de GDE y certificado adjunto (PDF/imagen).
 - Créditos cumplidos = suma de créditos con estado `aprobado`, filtrable por año.
+  Un curso aprobado suma al año de su `fecha_fin` (o al de `fecha_inicio` si
+  no tiene fin), y para marcarlo `aprobado` tiene que tener al menos una fecha.
 
 **Resúmenes**
 - Siempre por **año + mes** (la planilla filtraba solo por el nombre del mes).

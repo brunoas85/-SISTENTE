@@ -11,6 +11,7 @@ import '../../data/local/app_database.dart';
 import '../../data/providers.dart';
 import '../../domain/domain.dart';
 import '../perfil/perfil_providers.dart';
+import '../shell/app_shell.dart';
 import 'asistencia_providers.dart';
 import 'confirmar_fichada_page.dart';
 import 'widgets/sync_indicator.dart';
@@ -143,6 +144,7 @@ class _FicharPageState extends ConsumerState<FicharPage> {
         title: const Text('@sistente'),
         actions: [
           const SyncIndicator(),
+          const ShellAccountButton(),
           PopupMenuButton<String>(
             tooltip: 'Más opciones',
             onSelected: (v) {

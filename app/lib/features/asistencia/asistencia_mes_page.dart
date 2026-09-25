@@ -301,7 +301,7 @@ class _AsistenciaMesPageState extends ConsumerState<AsistenciaMesPage> {
         child: Scaffold(
           appBar: AppBar(
             title: const Text('Asistencia'),
-            actions: const [SyncIndicator()],
+            actions: const [SyncIndicator(), ShellAccountButton()],
           ),
           body: SafeArea(
             child: switch (async) {

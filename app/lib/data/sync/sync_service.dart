@@ -4,6 +4,7 @@ import '../fichadas/remote_fichada.dart';
 import '../local/app_database.dart';
 import '../perfil/perfil_repository.dart';
 import 'banco_sync.dart';
+import 'cursos_sync.dart';
 import 'fichadas_remote.dart';
 
 /// Ruta de la foto en el bucket `comprobantes`:
@@ -51,7 +52,8 @@ class SyncResult {
 /// 3. Actualiza los feriados cada tanto (o ya, si no hay ninguno guardado).
 /// 4. Banco de horas: tipos de documento GDE y movimientos (ver
 ///    [BancoSync]), si se configuró.
-/// 5. Sube el agrupamiento elegido y baja el perfil.
+/// 5. Cursos (ver [CursosSync]), si se configuró.
+/// 6. Sube el agrupamiento elegido y baja el perfil.
 ///
 /// Si no hay red corta sin marcar errores: las filas quedan pendientes.
 class SyncService {
@@ -60,6 +62,7 @@ class SyncService {
     required PerfilRepository perfiles,
     required FichadasRemote remote,
     this.banco,
+    this.cursos,
     DateTime Function()? clock,
     this.holidaysRefreshEvery = const Duration(hours: 12),
   }) : _repo = repository,
@@ -75,6 +78,9 @@ class SyncService {
 
   /// Sincronización del banco de horas (`null` = no se sincroniza).
   final BancoSync? banco;
+
+  /// Sincronización de los cursos (`null` = no se sincronizan).
+  final CursosSync? cursos;
 
   /// Cursor de la última descarga, por usuario.
   static String pulledAtKey(String userId) => 'fichadas_pulled_at:$userId';
@@ -181,11 +187,13 @@ class SyncService {
       message = e.message;
     }
 
-    // 4. Banco de horas. Sin red corta; un rechazo no frena el resto.
+    // 4. Banco de horas y 5. cursos. Sin red corta; un rechazo no frena el
+    // resto.
     final b = banco;
-    if (b != null) {
+    final c = cursos;
+    for (final section in [?b?.run, ?c?.run]) {
       try {
-        final r = await b.run(userId);
+        final r = await section(userId);
         uploaded += r.uploaded;
         failed += r.failed;
         downloaded += r.downloaded;
@@ -202,7 +210,7 @@ class SyncService {
       }
     }
 
-    // 5. Perfil (agrupamiento). Un rechazo no frena el resto. Si el servidor
+    // 6. Perfil (agrupamiento). Un rechazo no frena el resto. Si el servidor
     // todavía no tiene la columna, lo elegido sigue pendiente (se usa local)
     // y se reintenta en la próxima pasada.
     try {

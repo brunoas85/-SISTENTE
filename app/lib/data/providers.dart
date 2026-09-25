@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../core/auth/auth_providers.dart';
 import 'attachments/attachment_picker.dart';
 import 'banco/banco_repository.dart';
+import 'cursos/cursos_repository.dart';
 import 'fichadas/fichadas_repository.dart';
 import 'local/app_database.dart';
 import 'local/open_connection.dart';
@@ -13,6 +14,8 @@ import 'photos/photo_compressor.dart';
 import 'photos/photo_store.dart';
 import 'sync/banco_remote.dart';
 import 'sync/banco_sync.dart';
+import 'sync/cursos_remote.dart';
+import 'sync/cursos_sync.dart';
 import 'sync/fichadas_remote.dart';
 import 'sync/sync_service.dart';
 
@@ -60,6 +63,17 @@ BancoRepository bancoRepository(Ref ref) => BancoRepository(
 );
 
 @Riverpod(keepAlive: true)
+CursosRepository cursosRepository(Ref ref) => CursosRepository(
+  ref.watch(appDatabaseProvider),
+  ref.watch(photoStoreProvider),
+  clock: ref.watch(clockProvider),
+);
+
+@Riverpod(keepAlive: true)
+CursosRemote cursosRemote(Ref ref) =>
+    SupabaseCursosRemote(ref.watch(supabaseClientProvider));
+
+@Riverpod(keepAlive: true)
 AttachmentPicker attachmentPicker(Ref ref) =>
     const FileSelectorAttachmentPicker();
 
@@ -79,6 +93,11 @@ SyncService syncService(Ref ref) => SyncService(
   banco: BancoSync(
     repository: ref.watch(bancoRepositoryProvider),
     remote: ref.watch(bancoRemoteProvider),
+  ),
+  cursos: CursosSync(
+    repository: ref.watch(cursosRepositoryProvider),
+    remote: ref.watch(cursosRemoteProvider),
+    clock: ref.watch(clockProvider),
   ),
   clock: ref.watch(clockProvider),
 );

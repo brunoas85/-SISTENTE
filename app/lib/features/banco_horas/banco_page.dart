@@ -83,6 +83,7 @@ class _BancoPageState extends ConsumerState<BancoPage> {
                 icon: const Icon(Icons.description_outlined),
               ),
               const SyncIndicator(),
+              const ShellAccountButton(),
             ],
           ),
           floatingActionButton: FloatingActionButton.extended(

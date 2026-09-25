@@ -129,10 +129,15 @@ void main() {
         findsOneWidget,
       );
 
-      // Desde la navegación se llega a Perfil y a Feriados.
+      // Desde la navegación se llega a Perfil (avatar), a Feriados (en
+      // "Más") y a Banco (barra).
       await tester.tap(find.byKey(const Key('nav-/perfil')));
       await tester.pumpAndSettle();
       expect(find.text('Perfil'), findsWidgets);
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('nav-mas')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('nav-/feriados')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('sin-feriados')), findsOneWidget);

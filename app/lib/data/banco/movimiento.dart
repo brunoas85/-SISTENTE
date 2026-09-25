@@ -25,6 +25,9 @@ import '../../domain/domain.dart';
 import '../attachments/attachment.dart';
 import '../local/app_database.dart';
 
+export '../attachments/attachment.dart'
+    show CambioAdjunto, MantenerAdjunto, NuevoAdjunto, QuitarAdjunto;
+
 /// Los tres tipos de movimiento que se cargan a mano.
 enum TipoMovimiento {
   /// Horas fuera de jornada (por ej. un sábado). Suma al banco.
@@ -131,27 +134,6 @@ class MovimientoDraft {
   final String? tipoDocumentoId;
   final String? numeroGde;
   final String? observacion;
-}
-
-/// Qué hacer con el adjunto al guardar.
-sealed class CambioAdjunto {
-  const CambioAdjunto();
-}
-
-/// Dejar el adjunto como está.
-class MantenerAdjunto extends CambioAdjunto {
-  const MantenerAdjunto();
-}
-
-/// Quitar el adjunto.
-class QuitarAdjunto extends CambioAdjunto {
-  const QuitarAdjunto();
-}
-
-/// Reemplazar (o agregar) el adjunto.
-class NuevoAdjunto extends CambioAdjunto {
-  const NuevoAdjunto(this.archivo);
-  final PreparedAttachment archivo;
 }
 
 /// Lo que hace falta para validar un movimiento contra el banco.

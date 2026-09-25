@@ -143,4 +143,44 @@ void main() {
       expect(manual.origen, 'manual');
     },
   );
+
+  test('v4 → v5: crea la tabla de cursos sin tocar las fichadas', () async {
+    driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+    final db = AppDatabase(
+      NativeDatabase.memory(
+        setup: (raw) {
+          raw.execute(_fichadasSinOrigen);
+          raw.execute(
+            "ALTER TABLE fichadas ADD COLUMN origen TEXT NOT NULL "
+            "DEFAULT 'dispositivo'",
+          );
+          raw.execute(
+            "INSERT INTO fichadas (id, user_id, fecha, ingreso_min, "
+            "updated_at, sync_status, origen) VALUES ('ficticia', "
+            "'$fakeUserId', '2026-09-24', 480, 0, 'synced', 'manual')",
+          );
+          raw.execute('PRAGMA user_version = 4');
+        },
+      ),
+    );
+    addTearDown(db.close);
+
+    final fichada = await db.select(db.fichadas).getSingle();
+    expect(fichada.origen, 'manual');
+    expect(await db.select(db.cursos).get(), isEmpty);
+    await db
+        .into(db.cursos)
+        .insert(
+          CursosCompanion.insert(
+            id: 'curso-ficticio',
+            userId: fakeUserId,
+            actividad: 'Curso ficticio',
+            updatedAt: DateTime(2026, 9, 25),
+            syncStatus: SyncStatus.pending,
+          ),
+        );
+    final curso = await db.select(db.cursos).getSingle();
+    expect(curso.estado, 'inscripto');
+    expect(curso.revision, 0);
+  });
 }

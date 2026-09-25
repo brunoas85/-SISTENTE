@@ -6,6 +6,7 @@ import '../../data/sync/sync_controller.dart';
 import '../../domain/domain.dart';
 import '../asistencia/asistencia_providers.dart';
 import '../asistencia/widgets/sync_indicator.dart';
+import '../shell/app_shell.dart';
 
 /// Texto del tipo de feriado.
 String tipoFeriadoLabel(HolidayKind kind) => switch (kind) {
@@ -57,6 +58,7 @@ class _FeriadosPageState extends ConsumerState<FeriadosPage> {
               ],
             ),
           const SyncIndicator(),
+          const ShellAccountButton(),
         ],
       ),
       body: SafeArea(

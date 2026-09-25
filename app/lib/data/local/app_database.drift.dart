@@ -3776,6 +3776,1039 @@ class BancoMovimientosCompanion extends UpdateCompanion<LocalMovimiento> {
   }
 }
 
+class $CursosTable extends Cursos with TableInfo<$CursosTable, LocalCurso> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CursosTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _actividadMeta = const VerificationMeta(
+    'actividad',
+  );
+  @override
+  late final GeneratedColumn<String> actividad = GeneratedColumn<String>(
+    'actividad',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _codigoMeta = const VerificationMeta('codigo');
+  @override
+  late final GeneratedColumn<String> codigo = GeneratedColumn<String>(
+    'codigo',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _portalMeta = const VerificationMeta('portal');
+  @override
+  late final GeneratedColumn<String> portal = GeneratedColumn<String>(
+    'portal',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fechaInicioMeta = const VerificationMeta(
+    'fechaInicio',
+  );
+  @override
+  late final GeneratedColumn<String> fechaInicio = GeneratedColumn<String>(
+    'fecha_inicio',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fechaFinMeta = const VerificationMeta(
+    'fechaFin',
+  );
+  @override
+  late final GeneratedColumn<String> fechaFin = GeneratedColumn<String>(
+    'fecha_fin',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _creditosMeta = const VerificationMeta(
+    'creditos',
+  );
+  @override
+  late final GeneratedColumn<int> creditos = GeneratedColumn<int>(
+    'creditos',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _estadoMeta = const VerificationMeta('estado');
+  @override
+  late final GeneratedColumn<String> estado = GeneratedColumn<String>(
+    'estado',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('inscripto'),
+  );
+  static const VerificationMeta _ifGdeMeta = const VerificationMeta('ifGde');
+  @override
+  late final GeneratedColumn<String> ifGde = GeneratedColumn<String>(
+    'if_gde',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _certificadoPathMeta = const VerificationMeta(
+    'certificadoPath',
+  );
+  @override
+  late final GeneratedColumn<String> certificadoPath = GeneratedColumn<String>(
+    'certificado_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _certificadoLocalMeta = const VerificationMeta(
+    'certificadoLocal',
+  );
+  @override
+  late final GeneratedColumn<String> certificadoLocal = GeneratedColumn<String>(
+    'certificado_local',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _observacionMeta = const VerificationMeta(
+    'observacion',
+  );
+  @override
+  late final GeneratedColumn<String> observacion = GeneratedColumn<String>(
+    'observacion',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _revisionMeta = const VerificationMeta(
+    'revision',
+  );
+  @override
+  late final GeneratedColumn<int> revision = GeneratedColumn<int>(
+    'revision',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<SyncStatus, String> syncStatus =
+      GeneratedColumn<String>(
+        'sync_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<SyncStatus>($CursosTable.$convertersyncStatus);
+  static const VerificationMeta _syncErrorMeta = const VerificationMeta(
+    'syncError',
+  );
+  @override
+  late final GeneratedColumn<String> syncError = GeneratedColumn<String>(
+    'sync_error',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    actividad,
+    codigo,
+    portal,
+    fechaInicio,
+    fechaFin,
+    creditos,
+    estado,
+    ifGde,
+    certificadoPath,
+    certificadoLocal,
+    observacion,
+    deletedAt,
+    updatedAt,
+    revision,
+    syncStatus,
+    syncError,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cursos';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LocalCurso> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('actividad')) {
+      context.handle(
+        _actividadMeta,
+        actividad.isAcceptableOrUnknown(data['actividad']!, _actividadMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_actividadMeta);
+    }
+    if (data.containsKey('codigo')) {
+      context.handle(
+        _codigoMeta,
+        codigo.isAcceptableOrUnknown(data['codigo']!, _codigoMeta),
+      );
+    }
+    if (data.containsKey('portal')) {
+      context.handle(
+        _portalMeta,
+        portal.isAcceptableOrUnknown(data['portal']!, _portalMeta),
+      );
+    }
+    if (data.containsKey('fecha_inicio')) {
+      context.handle(
+        _fechaInicioMeta,
+        fechaInicio.isAcceptableOrUnknown(
+          data['fecha_inicio']!,
+          _fechaInicioMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fecha_fin')) {
+      context.handle(
+        _fechaFinMeta,
+        fechaFin.isAcceptableOrUnknown(data['fecha_fin']!, _fechaFinMeta),
+      );
+    }
+    if (data.containsKey('creditos')) {
+      context.handle(
+        _creditosMeta,
+        creditos.isAcceptableOrUnknown(data['creditos']!, _creditosMeta),
+      );
+    }
+    if (data.containsKey('estado')) {
+      context.handle(
+        _estadoMeta,
+        estado.isAcceptableOrUnknown(data['estado']!, _estadoMeta),
+      );
+    }
+    if (data.containsKey('if_gde')) {
+      context.handle(
+        _ifGdeMeta,
+        ifGde.isAcceptableOrUnknown(data['if_gde']!, _ifGdeMeta),
+      );
+    }
+    if (data.containsKey('certificado_path')) {
+      context.handle(
+        _certificadoPathMeta,
+        certificadoPath.isAcceptableOrUnknown(
+          data['certificado_path']!,
+          _certificadoPathMeta,
+        ),
+      );
+    }
+    if (data.containsKey('certificado_local')) {
+      context.handle(
+        _certificadoLocalMeta,
+        certificadoLocal.isAcceptableOrUnknown(
+          data['certificado_local']!,
+          _certificadoLocalMeta,
+        ),
+      );
+    }
+    if (data.containsKey('observacion')) {
+      context.handle(
+        _observacionMeta,
+        observacion.isAcceptableOrUnknown(
+          data['observacion']!,
+          _observacionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('revision')) {
+      context.handle(
+        _revisionMeta,
+        revision.isAcceptableOrUnknown(data['revision']!, _revisionMeta),
+      );
+    }
+    if (data.containsKey('sync_error')) {
+      context.handle(
+        _syncErrorMeta,
+        syncError.isAcceptableOrUnknown(data['sync_error']!, _syncErrorMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalCurso map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalCurso(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      actividad: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actividad'],
+      )!,
+      codigo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}codigo'],
+      ),
+      portal: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}portal'],
+      ),
+      fechaInicio: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fecha_inicio'],
+      ),
+      fechaFin: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fecha_fin'],
+      ),
+      creditos: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}creditos'],
+      ),
+      estado: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}estado'],
+      )!,
+      ifGde: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}if_gde'],
+      ),
+      certificadoPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}certificado_path'],
+      ),
+      certificadoLocal: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}certificado_local'],
+      ),
+      observacion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observacion'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      revision: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}revision'],
+      )!,
+      syncStatus: $CursosTable.$convertersyncStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}sync_status'],
+        )!,
+      ),
+      syncError: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_error'],
+      ),
+    );
+  }
+
+  @override
+  $CursosTable createAlias(String alias) {
+    return $CursosTable(attachedDatabase, alias);
+  }
+
+  static JsonTypeConverter2<SyncStatus, String, String> $convertersyncStatus =
+      const EnumNameConverter<SyncStatus>(SyncStatus.values);
+}
+
+class LocalCurso extends DataClass implements Insertable<LocalCurso> {
+  /// uuid generado en el cliente.
+  final String id;
+  final String userId;
+  final String actividad;
+
+  /// Por ejemplo `IN-A3-00000` (texto libre).
+  final String? codigo;
+
+  /// INAP, SEDRONAR, SRT, … (texto libre).
+  final String? portal;
+  final String? fechaInicio;
+  final String? fechaFin;
+  final int? creditos;
+
+  /// Valor del enum `curso_estado` (ver `CourseStatus`).
+  final String estado;
+
+  /// Número de IF de GDE (texto libre).
+  final String? ifGde;
+
+  /// Ruta en el bucket `certificados` (se completa al subir el certificado).
+  final String? certificadoPath;
+
+  /// Referencia al certificado guardado en el dispositivo (ver
+  /// `PhotoStore`). El nombre termina en la extensión (`.jpg` o `.pdf`).
+  final String? certificadoLocal;
+  final String? observacion;
+  final DateTime? deletedAt;
+  final DateTime updatedAt;
+  final int revision;
+  final SyncStatus syncStatus;
+  final String? syncError;
+  const LocalCurso({
+    required this.id,
+    required this.userId,
+    required this.actividad,
+    this.codigo,
+    this.portal,
+    this.fechaInicio,
+    this.fechaFin,
+    this.creditos,
+    required this.estado,
+    this.ifGde,
+    this.certificadoPath,
+    this.certificadoLocal,
+    this.observacion,
+    this.deletedAt,
+    required this.updatedAt,
+    required this.revision,
+    required this.syncStatus,
+    this.syncError,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['actividad'] = Variable<String>(actividad);
+    if (!nullToAbsent || codigo != null) {
+      map['codigo'] = Variable<String>(codigo);
+    }
+    if (!nullToAbsent || portal != null) {
+      map['portal'] = Variable<String>(portal);
+    }
+    if (!nullToAbsent || fechaInicio != null) {
+      map['fecha_inicio'] = Variable<String>(fechaInicio);
+    }
+    if (!nullToAbsent || fechaFin != null) {
+      map['fecha_fin'] = Variable<String>(fechaFin);
+    }
+    if (!nullToAbsent || creditos != null) {
+      map['creditos'] = Variable<int>(creditos);
+    }
+    map['estado'] = Variable<String>(estado);
+    if (!nullToAbsent || ifGde != null) {
+      map['if_gde'] = Variable<String>(ifGde);
+    }
+    if (!nullToAbsent || certificadoPath != null) {
+      map['certificado_path'] = Variable<String>(certificadoPath);
+    }
+    if (!nullToAbsent || certificadoLocal != null) {
+      map['certificado_local'] = Variable<String>(certificadoLocal);
+    }
+    if (!nullToAbsent || observacion != null) {
+      map['observacion'] = Variable<String>(observacion);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['revision'] = Variable<int>(revision);
+    {
+      map['sync_status'] = Variable<String>(
+        $CursosTable.$convertersyncStatus.toSql(syncStatus),
+      );
+    }
+    if (!nullToAbsent || syncError != null) {
+      map['sync_error'] = Variable<String>(syncError);
+    }
+    return map;
+  }
+
+  CursosCompanion toCompanion(bool nullToAbsent) {
+    return CursosCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      actividad: Value(actividad),
+      codigo: codigo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(codigo),
+      portal: portal == null && nullToAbsent
+          ? const Value.absent()
+          : Value(portal),
+      fechaInicio: fechaInicio == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fechaInicio),
+      fechaFin: fechaFin == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fechaFin),
+      creditos: creditos == null && nullToAbsent
+          ? const Value.absent()
+          : Value(creditos),
+      estado: Value(estado),
+      ifGde: ifGde == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ifGde),
+      certificadoPath: certificadoPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(certificadoPath),
+      certificadoLocal: certificadoLocal == null && nullToAbsent
+          ? const Value.absent()
+          : Value(certificadoLocal),
+      observacion: observacion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(observacion),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      updatedAt: Value(updatedAt),
+      revision: Value(revision),
+      syncStatus: Value(syncStatus),
+      syncError: syncError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncError),
+    );
+  }
+
+  factory LocalCurso.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalCurso(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      actividad: serializer.fromJson<String>(json['actividad']),
+      codigo: serializer.fromJson<String?>(json['codigo']),
+      portal: serializer.fromJson<String?>(json['portal']),
+      fechaInicio: serializer.fromJson<String?>(json['fechaInicio']),
+      fechaFin: serializer.fromJson<String?>(json['fechaFin']),
+      creditos: serializer.fromJson<int?>(json['creditos']),
+      estado: serializer.fromJson<String>(json['estado']),
+      ifGde: serializer.fromJson<String?>(json['ifGde']),
+      certificadoPath: serializer.fromJson<String?>(json['certificadoPath']),
+      certificadoLocal: serializer.fromJson<String?>(json['certificadoLocal']),
+      observacion: serializer.fromJson<String?>(json['observacion']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      revision: serializer.fromJson<int>(json['revision']),
+      syncStatus: $CursosTable.$convertersyncStatus.fromJson(
+        serializer.fromJson<String>(json['syncStatus']),
+      ),
+      syncError: serializer.fromJson<String?>(json['syncError']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'actividad': serializer.toJson<String>(actividad),
+      'codigo': serializer.toJson<String?>(codigo),
+      'portal': serializer.toJson<String?>(portal),
+      'fechaInicio': serializer.toJson<String?>(fechaInicio),
+      'fechaFin': serializer.toJson<String?>(fechaFin),
+      'creditos': serializer.toJson<int?>(creditos),
+      'estado': serializer.toJson<String>(estado),
+      'ifGde': serializer.toJson<String?>(ifGde),
+      'certificadoPath': serializer.toJson<String?>(certificadoPath),
+      'certificadoLocal': serializer.toJson<String?>(certificadoLocal),
+      'observacion': serializer.toJson<String?>(observacion),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'revision': serializer.toJson<int>(revision),
+      'syncStatus': serializer.toJson<String>(
+        $CursosTable.$convertersyncStatus.toJson(syncStatus),
+      ),
+      'syncError': serializer.toJson<String?>(syncError),
+    };
+  }
+
+  LocalCurso copyWith({
+    String? id,
+    String? userId,
+    String? actividad,
+    Value<String?> codigo = const Value.absent(),
+    Value<String?> portal = const Value.absent(),
+    Value<String?> fechaInicio = const Value.absent(),
+    Value<String?> fechaFin = const Value.absent(),
+    Value<int?> creditos = const Value.absent(),
+    String? estado,
+    Value<String?> ifGde = const Value.absent(),
+    Value<String?> certificadoPath = const Value.absent(),
+    Value<String?> certificadoLocal = const Value.absent(),
+    Value<String?> observacion = const Value.absent(),
+    Value<DateTime?> deletedAt = const Value.absent(),
+    DateTime? updatedAt,
+    int? revision,
+    SyncStatus? syncStatus,
+    Value<String?> syncError = const Value.absent(),
+  }) => LocalCurso(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    actividad: actividad ?? this.actividad,
+    codigo: codigo.present ? codigo.value : this.codigo,
+    portal: portal.present ? portal.value : this.portal,
+    fechaInicio: fechaInicio.present ? fechaInicio.value : this.fechaInicio,
+    fechaFin: fechaFin.present ? fechaFin.value : this.fechaFin,
+    creditos: creditos.present ? creditos.value : this.creditos,
+    estado: estado ?? this.estado,
+    ifGde: ifGde.present ? ifGde.value : this.ifGde,
+    certificadoPath: certificadoPath.present
+        ? certificadoPath.value
+        : this.certificadoPath,
+    certificadoLocal: certificadoLocal.present
+        ? certificadoLocal.value
+        : this.certificadoLocal,
+    observacion: observacion.present ? observacion.value : this.observacion,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    revision: revision ?? this.revision,
+    syncStatus: syncStatus ?? this.syncStatus,
+    syncError: syncError.present ? syncError.value : this.syncError,
+  );
+  LocalCurso copyWithCompanion(CursosCompanion data) {
+    return LocalCurso(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      actividad: data.actividad.present ? data.actividad.value : this.actividad,
+      codigo: data.codigo.present ? data.codigo.value : this.codigo,
+      portal: data.portal.present ? data.portal.value : this.portal,
+      fechaInicio: data.fechaInicio.present
+          ? data.fechaInicio.value
+          : this.fechaInicio,
+      fechaFin: data.fechaFin.present ? data.fechaFin.value : this.fechaFin,
+      creditos: data.creditos.present ? data.creditos.value : this.creditos,
+      estado: data.estado.present ? data.estado.value : this.estado,
+      ifGde: data.ifGde.present ? data.ifGde.value : this.ifGde,
+      certificadoPath: data.certificadoPath.present
+          ? data.certificadoPath.value
+          : this.certificadoPath,
+      certificadoLocal: data.certificadoLocal.present
+          ? data.certificadoLocal.value
+          : this.certificadoLocal,
+      observacion: data.observacion.present
+          ? data.observacion.value
+          : this.observacion,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      revision: data.revision.present ? data.revision.value : this.revision,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      syncError: data.syncError.present ? data.syncError.value : this.syncError,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalCurso(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('actividad: $actividad, ')
+          ..write('codigo: $codigo, ')
+          ..write('portal: $portal, ')
+          ..write('fechaInicio: $fechaInicio, ')
+          ..write('fechaFin: $fechaFin, ')
+          ..write('creditos: $creditos, ')
+          ..write('estado: $estado, ')
+          ..write('ifGde: $ifGde, ')
+          ..write('certificadoPath: $certificadoPath, ')
+          ..write('certificadoLocal: $certificadoLocal, ')
+          ..write('observacion: $observacion, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('revision: $revision, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncError: $syncError')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    actividad,
+    codigo,
+    portal,
+    fechaInicio,
+    fechaFin,
+    creditos,
+    estado,
+    ifGde,
+    certificadoPath,
+    certificadoLocal,
+    observacion,
+    deletedAt,
+    updatedAt,
+    revision,
+    syncStatus,
+    syncError,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalCurso &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.actividad == this.actividad &&
+          other.codigo == this.codigo &&
+          other.portal == this.portal &&
+          other.fechaInicio == this.fechaInicio &&
+          other.fechaFin == this.fechaFin &&
+          other.creditos == this.creditos &&
+          other.estado == this.estado &&
+          other.ifGde == this.ifGde &&
+          other.certificadoPath == this.certificadoPath &&
+          other.certificadoLocal == this.certificadoLocal &&
+          other.observacion == this.observacion &&
+          other.deletedAt == this.deletedAt &&
+          other.updatedAt == this.updatedAt &&
+          other.revision == this.revision &&
+          other.syncStatus == this.syncStatus &&
+          other.syncError == this.syncError);
+}
+
+class CursosCompanion extends UpdateCompanion<LocalCurso> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> actividad;
+  final Value<String?> codigo;
+  final Value<String?> portal;
+  final Value<String?> fechaInicio;
+  final Value<String?> fechaFin;
+  final Value<int?> creditos;
+  final Value<String> estado;
+  final Value<String?> ifGde;
+  final Value<String?> certificadoPath;
+  final Value<String?> certificadoLocal;
+  final Value<String?> observacion;
+  final Value<DateTime?> deletedAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> revision;
+  final Value<SyncStatus> syncStatus;
+  final Value<String?> syncError;
+  final Value<int> rowid;
+  const CursosCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.actividad = const Value.absent(),
+    this.codigo = const Value.absent(),
+    this.portal = const Value.absent(),
+    this.fechaInicio = const Value.absent(),
+    this.fechaFin = const Value.absent(),
+    this.creditos = const Value.absent(),
+    this.estado = const Value.absent(),
+    this.ifGde = const Value.absent(),
+    this.certificadoPath = const Value.absent(),
+    this.certificadoLocal = const Value.absent(),
+    this.observacion = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.revision = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.syncError = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CursosCompanion.insert({
+    required String id,
+    required String userId,
+    required String actividad,
+    this.codigo = const Value.absent(),
+    this.portal = const Value.absent(),
+    this.fechaInicio = const Value.absent(),
+    this.fechaFin = const Value.absent(),
+    this.creditos = const Value.absent(),
+    this.estado = const Value.absent(),
+    this.ifGde = const Value.absent(),
+    this.certificadoPath = const Value.absent(),
+    this.certificadoLocal = const Value.absent(),
+    this.observacion = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    required DateTime updatedAt,
+    this.revision = const Value.absent(),
+    required SyncStatus syncStatus,
+    this.syncError = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       actividad = Value(actividad),
+       updatedAt = Value(updatedAt),
+       syncStatus = Value(syncStatus);
+  static Insertable<LocalCurso> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? actividad,
+    Expression<String>? codigo,
+    Expression<String>? portal,
+    Expression<String>? fechaInicio,
+    Expression<String>? fechaFin,
+    Expression<int>? creditos,
+    Expression<String>? estado,
+    Expression<String>? ifGde,
+    Expression<String>? certificadoPath,
+    Expression<String>? certificadoLocal,
+    Expression<String>? observacion,
+    Expression<DateTime>? deletedAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? revision,
+    Expression<String>? syncStatus,
+    Expression<String>? syncError,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (actividad != null) 'actividad': actividad,
+      if (codigo != null) 'codigo': codigo,
+      if (portal != null) 'portal': portal,
+      if (fechaInicio != null) 'fecha_inicio': fechaInicio,
+      if (fechaFin != null) 'fecha_fin': fechaFin,
+      if (creditos != null) 'creditos': creditos,
+      if (estado != null) 'estado': estado,
+      if (ifGde != null) 'if_gde': ifGde,
+      if (certificadoPath != null) 'certificado_path': certificadoPath,
+      if (certificadoLocal != null) 'certificado_local': certificadoLocal,
+      if (observacion != null) 'observacion': observacion,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (revision != null) 'revision': revision,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (syncError != null) 'sync_error': syncError,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CursosCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? actividad,
+    Value<String?>? codigo,
+    Value<String?>? portal,
+    Value<String?>? fechaInicio,
+    Value<String?>? fechaFin,
+    Value<int?>? creditos,
+    Value<String>? estado,
+    Value<String?>? ifGde,
+    Value<String?>? certificadoPath,
+    Value<String?>? certificadoLocal,
+    Value<String?>? observacion,
+    Value<DateTime?>? deletedAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? revision,
+    Value<SyncStatus>? syncStatus,
+    Value<String?>? syncError,
+    Value<int>? rowid,
+  }) {
+    return CursosCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      actividad: actividad ?? this.actividad,
+      codigo: codigo ?? this.codigo,
+      portal: portal ?? this.portal,
+      fechaInicio: fechaInicio ?? this.fechaInicio,
+      fechaFin: fechaFin ?? this.fechaFin,
+      creditos: creditos ?? this.creditos,
+      estado: estado ?? this.estado,
+      ifGde: ifGde ?? this.ifGde,
+      certificadoPath: certificadoPath ?? this.certificadoPath,
+      certificadoLocal: certificadoLocal ?? this.certificadoLocal,
+      observacion: observacion ?? this.observacion,
+      deletedAt: deletedAt ?? this.deletedAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      revision: revision ?? this.revision,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncError: syncError ?? this.syncError,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (actividad.present) {
+      map['actividad'] = Variable<String>(actividad.value);
+    }
+    if (codigo.present) {
+      map['codigo'] = Variable<String>(codigo.value);
+    }
+    if (portal.present) {
+      map['portal'] = Variable<String>(portal.value);
+    }
+    if (fechaInicio.present) {
+      map['fecha_inicio'] = Variable<String>(fechaInicio.value);
+    }
+    if (fechaFin.present) {
+      map['fecha_fin'] = Variable<String>(fechaFin.value);
+    }
+    if (creditos.present) {
+      map['creditos'] = Variable<int>(creditos.value);
+    }
+    if (estado.present) {
+      map['estado'] = Variable<String>(estado.value);
+    }
+    if (ifGde.present) {
+      map['if_gde'] = Variable<String>(ifGde.value);
+    }
+    if (certificadoPath.present) {
+      map['certificado_path'] = Variable<String>(certificadoPath.value);
+    }
+    if (certificadoLocal.present) {
+      map['certificado_local'] = Variable<String>(certificadoLocal.value);
+    }
+    if (observacion.present) {
+      map['observacion'] = Variable<String>(observacion.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (revision.present) {
+      map['revision'] = Variable<int>(revision.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(
+        $CursosTable.$convertersyncStatus.toSql(syncStatus.value),
+      );
+    }
+    if (syncError.present) {
+      map['sync_error'] = Variable<String>(syncError.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CursosCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('actividad: $actividad, ')
+          ..write('codigo: $codigo, ')
+          ..write('portal: $portal, ')
+          ..write('fechaInicio: $fechaInicio, ')
+          ..write('fechaFin: $fechaFin, ')
+          ..write('creditos: $creditos, ')
+          ..write('estado: $estado, ')
+          ..write('ifGde: $ifGde, ')
+          ..write('certificadoPath: $certificadoPath, ')
+          ..write('certificadoLocal: $certificadoLocal, ')
+          ..write('observacion: $observacion, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('revision: $revision, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('syncError: $syncError, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3789,6 +4822,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $BancoMovimientosTable bancoMovimientos = $BancoMovimientosTable(
     this,
   );
+  late final $CursosTable cursos = $CursosTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3801,6 +4835,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     localPhotos,
     tiposDocumentoGde,
     bancoMovimientos,
+    cursos,
   ];
 }
 
@@ -5746,6 +6781,466 @@ typedef $$BancoMovimientosTableProcessedTableManager =
       LocalMovimiento,
       PrefetchHooks Function()
     >;
+typedef $$CursosTableCreateCompanionBuilder = CursosCompanion Function({
+  required String id,
+  required String userId,
+  required String actividad,
+  Value<String?> codigo,
+  Value<String?> portal,
+  Value<String?> fechaInicio,
+  Value<String?> fechaFin,
+  Value<int?> creditos,
+  Value<String> estado,
+  Value<String?> ifGde,
+  Value<String?> certificadoPath,
+  Value<String?> certificadoLocal,
+  Value<String?> observacion,
+  Value<DateTime?> deletedAt,
+  required DateTime updatedAt,
+  Value<int> revision,
+  required SyncStatus syncStatus,
+  Value<String?> syncError,
+  Value<int> rowid,
+});
+typedef $$CursosTableUpdateCompanionBuilder = CursosCompanion Function({
+  Value<String> id,
+  Value<String> userId,
+  Value<String> actividad,
+  Value<String?> codigo,
+  Value<String?> portal,
+  Value<String?> fechaInicio,
+  Value<String?> fechaFin,
+  Value<int?> creditos,
+  Value<String> estado,
+  Value<String?> ifGde,
+  Value<String?> certificadoPath,
+  Value<String?> certificadoLocal,
+  Value<String?> observacion,
+  Value<DateTime?> deletedAt,
+  Value<DateTime> updatedAt,
+  Value<int> revision,
+  Value<SyncStatus> syncStatus,
+  Value<String?> syncError,
+  Value<int> rowid,
+});
+
+class $$CursosTableFilterComposer
+    extends Composer<_$AppDatabase, $CursosTable> {
+  $$CursosTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get actividad => $composableBuilder(
+    column: $table.actividad,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get codigo => $composableBuilder(
+    column: $table.codigo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get portal => $composableBuilder(
+    column: $table.portal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fechaInicio => $composableBuilder(
+    column: $table.fechaInicio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fechaFin => $composableBuilder(
+    column: $table.fechaFin,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get creditos => $composableBuilder(
+    column: $table.creditos,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estado => $composableBuilder(
+    column: $table.estado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ifGde => $composableBuilder(
+    column: $table.ifGde,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get certificadoPath => $composableBuilder(
+    column: $table.certificadoPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get certificadoLocal => $composableBuilder(
+    column: $table.certificadoLocal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get revision => $composableBuilder(
+    column: $table.revision,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<SyncStatus, SyncStatus, String>
+  get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<String> get syncError => $composableBuilder(
+    column: $table.syncError,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CursosTableOrderingComposer
+    extends Composer<_$AppDatabase, $CursosTable> {
+  $$CursosTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get actividad => $composableBuilder(
+    column: $table.actividad,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get codigo => $composableBuilder(
+    column: $table.codigo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get portal => $composableBuilder(
+    column: $table.portal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fechaInicio => $composableBuilder(
+    column: $table.fechaInicio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fechaFin => $composableBuilder(
+    column: $table.fechaFin,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get creditos => $composableBuilder(
+    column: $table.creditos,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estado => $composableBuilder(
+    column: $table.estado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ifGde => $composableBuilder(
+    column: $table.ifGde,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get certificadoPath => $composableBuilder(
+    column: $table.certificadoPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get certificadoLocal => $composableBuilder(
+    column: $table.certificadoLocal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get revision => $composableBuilder(
+    column: $table.revision,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncError => $composableBuilder(
+    column: $table.syncError,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CursosTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CursosTable> {
+  $$CursosTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get actividad =>
+      $composableBuilder(column: $table.actividad, builder: (column) => column);
+
+  GeneratedColumn<String> get codigo =>
+      $composableBuilder(column: $table.codigo, builder: (column) => column);
+
+  GeneratedColumn<String> get portal =>
+      $composableBuilder(column: $table.portal, builder: (column) => column);
+
+  GeneratedColumn<String> get fechaInicio => $composableBuilder(
+    column: $table.fechaInicio,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get fechaFin =>
+      $composableBuilder(column: $table.fechaFin, builder: (column) => column);
+
+  GeneratedColumn<int> get creditos =>
+      $composableBuilder(column: $table.creditos, builder: (column) => column);
+
+  GeneratedColumn<String> get estado =>
+      $composableBuilder(column: $table.estado, builder: (column) => column);
+
+  GeneratedColumn<String> get ifGde =>
+      $composableBuilder(column: $table.ifGde, builder: (column) => column);
+
+  GeneratedColumn<String> get certificadoPath => $composableBuilder(
+    column: $table.certificadoPath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get certificadoLocal => $composableBuilder(
+    column: $table.certificadoLocal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get observacion => $composableBuilder(
+    column: $table.observacion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get revision =>
+      $composableBuilder(column: $table.revision, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<SyncStatus, String> get syncStatus =>
+      $composableBuilder(
+        column: $table.syncStatus,
+        builder: (column) => column,
+      );
+
+  GeneratedColumn<String> get syncError =>
+      $composableBuilder(column: $table.syncError, builder: (column) => column);
+}
+
+class $$CursosTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CursosTable,
+          LocalCurso,
+          $$CursosTableFilterComposer,
+          $$CursosTableOrderingComposer,
+          $$CursosTableAnnotationComposer,
+          $$CursosTableCreateCompanionBuilder,
+          $$CursosTableUpdateCompanionBuilder,
+          (LocalCurso, BaseReferences<_$AppDatabase, $CursosTable, LocalCurso>),
+          LocalCurso,
+          PrefetchHooks Function()
+        > {
+  $$CursosTableTableManager(_$AppDatabase db, $CursosTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CursosTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CursosTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CursosTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> actividad = const Value.absent(),
+                Value<String?> codigo = const Value.absent(),
+                Value<String?> portal = const Value.absent(),
+                Value<String?> fechaInicio = const Value.absent(),
+                Value<String?> fechaFin = const Value.absent(),
+                Value<int?> creditos = const Value.absent(),
+                Value<String> estado = const Value.absent(),
+                Value<String?> ifGde = const Value.absent(),
+                Value<String?> certificadoPath = const Value.absent(),
+                Value<String?> certificadoLocal = const Value.absent(),
+                Value<String?> observacion = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> revision = const Value.absent(),
+                Value<SyncStatus> syncStatus = const Value.absent(),
+                Value<String?> syncError = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CursosCompanion(
+                id: id,
+                userId: userId,
+                actividad: actividad,
+                codigo: codigo,
+                portal: portal,
+                fechaInicio: fechaInicio,
+                fechaFin: fechaFin,
+                creditos: creditos,
+                estado: estado,
+                ifGde: ifGde,
+                certificadoPath: certificadoPath,
+                certificadoLocal: certificadoLocal,
+                observacion: observacion,
+                deletedAt: deletedAt,
+                updatedAt: updatedAt,
+                revision: revision,
+                syncStatus: syncStatus,
+                syncError: syncError,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String actividad,
+                Value<String?> codigo = const Value.absent(),
+                Value<String?> portal = const Value.absent(),
+                Value<String?> fechaInicio = const Value.absent(),
+                Value<String?> fechaFin = const Value.absent(),
+                Value<int?> creditos = const Value.absent(),
+                Value<String> estado = const Value.absent(),
+                Value<String?> ifGde = const Value.absent(),
+                Value<String?> certificadoPath = const Value.absent(),
+                Value<String?> certificadoLocal = const Value.absent(),
+                Value<String?> observacion = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
+                required DateTime updatedAt,
+                Value<int> revision = const Value.absent(),
+                required SyncStatus syncStatus,
+                Value<String?> syncError = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CursosCompanion.insert(
+                id: id,
+                userId: userId,
+                actividad: actividad,
+                codigo: codigo,
+                portal: portal,
+                fechaInicio: fechaInicio,
+                fechaFin: fechaFin,
+                creditos: creditos,
+                estado: estado,
+                ifGde: ifGde,
+                certificadoPath: certificadoPath,
+                certificadoLocal: certificadoLocal,
+                observacion: observacion,
+                deletedAt: deletedAt,
+                updatedAt: updatedAt,
+                revision: revision,
+                syncStatus: syncStatus,
+                syncError: syncError,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$CursosTable, LocalCurso>(table),
+                  BaseReferences<_$AppDatabase, $CursosTable, LocalCurso>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CursosTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CursosTable,
+      LocalCurso,
+      $$CursosTableFilterComposer,
+      $$CursosTableOrderingComposer,
+      $$CursosTableAnnotationComposer,
+      $$CursosTableCreateCompanionBuilder,
+      $$CursosTableUpdateCompanionBuilder,
+      (LocalCurso, BaseReferences<_$AppDatabase, $CursosTable, LocalCurso>),
+      LocalCurso,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5764,4 +7259,6 @@ class $AppDatabaseManager {
       $$TiposDocumentoGdeTableTableManager(_db, _db.tiposDocumentoGde);
   $$BancoMovimientosTableTableManager get bancoMovimientos =>
       $$BancoMovimientosTableTableManager(_db, _db.bancoMovimientos);
+  $$CursosTableTableManager get cursos =>
+      $$CursosTableTableManager(_db, _db.cursos);
 }

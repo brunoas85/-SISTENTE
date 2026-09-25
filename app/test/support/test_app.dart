@@ -17,6 +17,7 @@ class TestDeps {
       capture = FakePhotoCapture(fakeJpeg()),
       remote = FakeFichadasRemote()..online = false,
       bancoRemote = FakeBancoRemote()..online = false,
+      cursosRemote = FakeCursosRemote()..online = false,
       picker = FakeAttachmentPicker(),
       now = now ?? DateTime(2026, 9, 24, 8, 2);
 
@@ -26,6 +27,7 @@ class TestDeps {
   final FakePhotoCapture capture;
   final FakeFichadasRemote remote;
   final FakeBancoRemote bancoRemote;
+  final FakeCursosRemote cursosRemote;
   final FakeAttachmentPicker picker;
   DateTime now;
 
@@ -37,6 +39,7 @@ class TestDeps {
     photoCompressorProvider.overrideWithValue((bytes) async => bytes),
     fichadasRemoteProvider.overrideWithValue(remote),
     bancoRemoteProvider.overrideWithValue(bancoRemote),
+    cursosRemoteProvider.overrideWithValue(cursosRemote),
     attachmentPickerProvider.overrideWithValue(picker),
     connectivityOnlineProvider.overrideWith((ref) => Stream.value(false)),
     syncRetryIntervalProvider.overrideWithValue(null),

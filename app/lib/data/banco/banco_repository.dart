@@ -502,8 +502,8 @@ class BancoRepository {
       );
 }
 
-/// Cantidad de cambios sin sincronizar (fichadas, movimientos del banco y
-/// tipos de documento) del usuario. Es el contador global de la UI.
+/// Cantidad de cambios sin sincronizar (fichadas, movimientos del banco,
+/// tipos de documento y cursos) del usuario. Es el contador global de la UI.
 Stream<int> watchUnsyncedTotal(AppDatabase db, String userId) {
   const synced = 'synced';
   return db
@@ -511,10 +511,16 @@ Stream<int> watchUnsyncedTotal(AppDatabase db, String userId) {
         'SELECT '
         '(SELECT COUNT(*) FROM fichadas WHERE user_id = ?1 AND sync_status <> ?2) + '
         '(SELECT COUNT(*) FROM banco_movimientos WHERE user_id = ?1 AND sync_status <> ?2) + '
-        '(SELECT COUNT(*) FROM tipos_documento_gde WHERE user_id = ?1 AND sync_status <> ?2) '
+        '(SELECT COUNT(*) FROM tipos_documento_gde WHERE user_id = ?1 AND sync_status <> ?2) + '
+        '(SELECT COUNT(*) FROM cursos WHERE user_id = ?1 AND sync_status <> ?2) '
         'AS total',
         variables: [Variable.withString(userId), Variable.withString(synced)],
-        readsFrom: {db.fichadas, db.bancoMovimientos, db.tiposDocumentoGde},
+        readsFrom: {
+          db.fichadas,
+          db.bancoMovimientos,
+          db.tiposDocumentoGde,
+          db.cursos,
+        },
       )
       .watchSingle()
       .map((row) => row.read<int>('total'));

@@ -20,9 +20,14 @@ String adjuntoMovimientoPath({
     '${fecha.month.toString().padLeft(2, '0')}/'
     '${movimientoId}_adjunto.$extension';
 
-/// Resultado de la parte del banco de una pasada de sincronización.
-class BancoSyncResult {
-  const BancoSyncResult({
+/// Resultado de una parte (banco, cursos, …) de una pasada de
+/// sincronización.
+typedef BancoSyncResult = SectionSyncResult;
+
+/// Resultado de una parte (banco, cursos, …) de una pasada de
+/// sincronización.
+class SectionSyncResult {
+  const SectionSyncResult({
     this.uploaded = 0,
     this.failed = 0,
     this.downloaded = 0,

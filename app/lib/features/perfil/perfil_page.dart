@@ -6,6 +6,7 @@ import '../../data/perfil/perfil_repository.dart';
 import '../../domain/domain.dart';
 import '../asistencia/widgets/sync_indicator.dart';
 import '../asistencia/widgets/sync_status_icon.dart';
+import '../shell/app_shell.dart';
 import 'agrupamiento_selector.dart';
 import 'perfil_providers.dart';
 
@@ -37,6 +38,7 @@ class PerfilPage extends ConsumerWidget {
     final perfil = ref.watch(miPerfilProvider);
     return Scaffold(
       appBar: AppBar(
+        leading: shellBackButton(context),
         title: const Text('Perfil'),
         actions: const [SyncIndicator()],
       ),

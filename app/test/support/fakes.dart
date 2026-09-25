@@ -4,11 +4,13 @@ import 'dart:async';
 import 'package:asistente/core/auth/auth_repository.dart';
 import 'package:asistente/data/attachments/attachment_picker.dart';
 import 'package:asistente/data/banco/remote_banco.dart';
+import 'package:asistente/data/cursos/remote_curso.dart';
 import 'package:asistente/data/fichadas/remote_fichada.dart';
 import 'package:asistente/data/local/app_database.dart';
 import 'package:asistente/data/photos/photo_capture.dart';
 import 'package:asistente/data/photos/photo_store.dart';
 import 'package:asistente/data/sync/banco_remote.dart';
+import 'package:asistente/data/sync/cursos_remote.dart';
 import 'package:asistente/data/sync/fichadas_remote.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -338,6 +340,76 @@ class FakeBancoRemote implements BancoRemote {
   /// Simula un movimiento cargado desde otro dispositivo.
   void putFromOtherDevice(RemoteMovimiento m) =>
       movimientos[m.id] = m.withUpdatedAt(_tick());
+}
+
+/// Backend de mentira para los cursos (tabla y bucket `certificados`).
+class FakeCursosRemote implements CursosRemote {
+  bool online = true;
+
+  /// Si no es `null`, el upsert de ese curso se rechaza con este mensaje.
+  final rejectCurso = <String, String>{};
+
+  /// Registro de llamadas, en orden (`upload:<path>`, `curso:<id>`).
+  final calls = <String>[];
+  final storage = <String, Uint8List>{};
+  final contentTypes = <String, String>{};
+  final cursos = <String, RemoteCurso>{};
+
+  /// Duraciones pedidas para las URLs firmadas, en orden.
+  final signedUrlRequests = <(String, Duration)>[];
+  DateTime serverNow = DateTime.utc(2026, 9, 24, 12);
+  DateTime? lastSince;
+
+  void _checkOnline() {
+    if (!online) throw const RemoteUnavailableException('Sin conexión');
+  }
+
+  DateTime _tick() => serverNow = serverNow.add(const Duration(seconds: 1));
+
+  @override
+  Future<void> uploadCertificado({
+    required String path,
+    required Uint8List bytes,
+    required String contentType,
+  }) async {
+    _checkOnline();
+    calls.add('upload:$path');
+    storage[path] = bytes;
+    contentTypes[path] = contentType;
+  }
+
+  @override
+  Future<String> signedCertificadoUrl(
+    String path, {
+    Duration expiresIn = const Duration(seconds: 60),
+  }) async {
+    _checkOnline();
+    signedUrlRequests.add((path, expiresIn));
+    return 'https://storage.example.invalid/firmada/$path?token=ficticio';
+  }
+
+  @override
+  Future<void> upsertCurso(RemoteCurso curso) async {
+    _checkOnline();
+    calls.add('curso:${curso.id}');
+    final reject = rejectCurso[curso.id];
+    if (reject != null) throw RemoteRejectedException(reject);
+    cursos[curso.id] = curso.withUpdatedAt(_tick());
+  }
+
+  @override
+  Future<List<RemoteCurso>> fetchCursosChangedSince(DateTime? since) async {
+    _checkOnline();
+    lastSince = since;
+    return cursos.values
+        .where((r) => since == null || !r.updatedAt!.isBefore(since))
+        .toList()
+      ..sort((a, b) => a.updatedAt!.compareTo(b.updatedAt!));
+  }
+
+  /// Simula un curso cargado desde otro dispositivo.
+  void putFromOtherDevice(RemoteCurso c) =>
+      cursos[c.id] = c.withUpdatedAt(_tick());
 }
 
 class FakeAttachmentPicker implements AttachmentPicker {

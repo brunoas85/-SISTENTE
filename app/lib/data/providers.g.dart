@@ -361,6 +361,93 @@ final class BancoRepositoryProvider
 
 String _$bancoRepositoryHash() => r'4076107bd2bcf696b2f8e1bb5dfd7dec34c6bec2';
 
+@ProviderFor(cursosRepository)
+final cursosRepositoryProvider = CursosRepositoryProvider._();
+
+final class CursosRepositoryProvider
+    extends
+        $FunctionalProvider<
+          CursosRepository,
+          CursosRepository,
+          CursosRepository
+        >
+    with $Provider<CursosRepository> {
+  CursosRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'cursosRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$cursosRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<CursosRepository> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  CursosRepository create(Ref ref) {
+    return cursosRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(CursosRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<CursosRepository>(value),
+    );
+  }
+}
+
+String _$cursosRepositoryHash() => r'6458daa2347488849d92e7b93360ab532e8a16fa';
+
+@ProviderFor(cursosRemote)
+final cursosRemoteProvider = CursosRemoteProvider._();
+
+final class CursosRemoteProvider
+    extends $FunctionalProvider<CursosRemote, CursosRemote, CursosRemote>
+    with $Provider<CursosRemote> {
+  CursosRemoteProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'cursosRemoteProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$cursosRemoteHash();
+
+  @$internal
+  @override
+  $ProviderElement<CursosRemote> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  CursosRemote create(Ref ref) {
+    return cursosRemote(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(CursosRemote value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<CursosRemote>(value),
+    );
+  }
+}
+
+String _$cursosRemoteHash() => r'09c68bdb66fa76848afdc0b94774bfd64c1a05be';
+
 @ProviderFor(attachmentPicker)
 final attachmentPickerProvider = AttachmentPickerProvider._();
 
@@ -528,7 +615,7 @@ final class SyncServiceProvider
   }
 }
 
-String _$syncServiceHash() => r'ae7cb8dcb869dfcd54d79c796e99c0c41238bcdf';
+String _$syncServiceHash() => r'f65bac1ae7ae0a73b5c09a7f2d3f166adbbd2cd6';
 
 /// `true` si el dispositivo tiene alguna red (no garantiza internet).
 

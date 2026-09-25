@@ -83,3 +83,24 @@ Future<PreparedAttachment> prepareAttachment(
   }
   return PreparedAttachment(bytes: jpeg, extension: 'jpg');
 }
+
+/// Qué hacer con el adjunto al guardar.
+sealed class CambioAdjunto {
+  const CambioAdjunto();
+}
+
+/// Dejar el adjunto como está.
+class MantenerAdjunto extends CambioAdjunto {
+  const MantenerAdjunto();
+}
+
+/// Quitar el adjunto.
+class QuitarAdjunto extends CambioAdjunto {
+  const QuitarAdjunto();
+}
+
+/// Reemplazar (o agregar) el adjunto.
+class NuevoAdjunto extends CambioAdjunto {
+  const NuevoAdjunto(this.archivo);
+  final PreparedAttachment archivo;
+}

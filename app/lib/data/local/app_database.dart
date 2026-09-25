@@ -197,6 +197,47 @@ class BancoMovimientos extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+/// Espejo local de `public.cursos` (capacitación). Las fechas son
+/// `yyyy-MM-dd` y los créditos, enteros.
+@DataClassName('LocalCurso')
+class Cursos extends Table {
+  /// uuid generado en el cliente.
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get actividad => text()();
+
+  /// Por ejemplo `IN-A3-00000` (texto libre).
+  TextColumn get codigo => text().nullable()();
+
+  /// INAP, SEDRONAR, SRT, … (texto libre).
+  TextColumn get portal => text().nullable()();
+  TextColumn get fechaInicio => text().nullable()();
+  TextColumn get fechaFin => text().nullable()();
+  IntColumn get creditos => integer().nullable()();
+
+  /// Valor del enum `curso_estado` (ver `CourseStatus`).
+  TextColumn get estado => text().withDefault(const Constant('inscripto'))();
+
+  /// Número de IF de GDE (texto libre).
+  TextColumn get ifGde => text().nullable()();
+
+  /// Ruta en el bucket `certificados` (se completa al subir el certificado).
+  TextColumn get certificadoPath => text().nullable()();
+
+  /// Referencia al certificado guardado en el dispositivo (ver
+  /// `PhotoStore`). El nombre termina en la extensión (`.jpg` o `.pdf`).
+  TextColumn get certificadoLocal => text().nullable()();
+  TextColumn get observacion => text().nullable()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  DateTimeColumn get updatedAt => dateTime()();
+  IntColumn get revision => integer().withDefault(const Constant(0))();
+  TextColumn get syncStatus => textEnum<SyncStatus>()();
+  TextColumn get syncError => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 @DriftDatabase(
   tables: [
     Fichadas,
@@ -206,6 +247,7 @@ class BancoMovimientos extends Table {
     LocalPhotos,
     TiposDocumentoGde,
     BancoMovimientos,
+    Cursos,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -215,7 +257,7 @@ class AppDatabase extends _$AppDatabase {
   static const holidaysPulledAtKey = 'feriados_pulled_at';
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -228,6 +270,7 @@ class AppDatabase extends _$AppDatabase {
         'CREATE INDEX fichadas_sync_idx ON fichadas (user_id, sync_status)',
       );
       await _createBancoIndexes();
+      await _createCursosIndexes();
     },
     onUpgrade: (m, from, to) async {
       if (from < 2) {
@@ -248,6 +291,10 @@ class AppDatabase extends _$AppDatabase {
         // servidor).
         await m.addColumn(fichadas, fichadas.origen);
       }
+      if (from < 5) {
+        await m.createTable(cursos);
+        await _createCursosIndexes();
+      }
     },
   );
 
@@ -259,6 +306,15 @@ class AppDatabase extends _$AppDatabase {
     await customStatement(
       'CREATE INDEX banco_movimientos_sync_idx '
       'ON banco_movimientos (user_id, sync_status)',
+    );
+  }
+
+  Future<void> _createCursosIndexes() async {
+    await customStatement(
+      'CREATE INDEX cursos_user_inicio_idx ON cursos (user_id, fecha_inicio)',
+    );
+    await customStatement(
+      'CREATE INDEX cursos_sync_idx ON cursos (user_id, sync_status)',
     );
   }
 }

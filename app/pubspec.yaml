@@ -50,6 +50,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   file_selector: ^1.1.0
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
