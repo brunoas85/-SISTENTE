@@ -196,9 +196,20 @@ supabase gen types dart ...     # tras cambiar el esquema
   - Ante un conflicto de sincronización gana el último que sincroniza.
   - Backend: Supabase en la nube (proyecto `umzfjkdeuvsyswoueafu`). No se usa
     Docker local: las migraciones se aplican con `supabase db push`.
-  - Pendiente: usufructos de varios días, distinguir salida temprana de llegada
-    tarde, qué pasa con un usufructo parcial mayor que la deuda del día y si
-    las acumulaciones vencen.
+- **Decisiones de Bruno (2026-09-25), importador:**
+  - Se hace en la app, en PC: el xlsx se lee en el cliente y no se sube a
+    ningún servidor. Muestra una vista previa con cada fila *lista*, *dudosa*
+    o *ignorada*, y las dudosas las resuelve Bruno ahí.
+  - Importar historia mueve el inicio del control a la primera fecha
+    importada. Antes de confirmar, la vista previa muestra los faltantes que
+    se van a generar.
+  - Cursos con `CUMPLIDO = SI` → `aprobado`; con `NO` → `inscripto`.
+  - Hoja del banco: una fila con ingreso y egreso es una acumulación de
+    (egreso − ingreso) minutos en esa fecha. La columna USUFRUCTO y las filas
+    de 00:00 a 00:00 quedan como dudosas.
+- **Pendiente de decidir:** usufructos de varios días, distinguir salida temprana de llegada
+  tarde, qué pasa con un usufructo parcial mayor que la deuda del día y si
+  las acumulaciones vencen.
 - **Agentes:** para UI, estado, navegación, cámara, offline y layout usá
   `frontend-flutter`. Para esquema, migraciones, RLS, Storage, Edge Functions
   e importación usá `backend-supabase`. Si un cambio toca los dos lados, primero
